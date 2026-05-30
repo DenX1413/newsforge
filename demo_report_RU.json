@@ -1,0 +1,228 @@
+{
+  "header": {
+    "geo": "RU",
+    "generated_at": "2026-05-30T15:30:21.547360",
+    "coverage_days": 7,
+    "responsible_lead": "Demo Team",
+    "source_types": [
+      "local_tabloid",
+      "top_media",
+      "social_media"
+    ]
+  },
+  "block_1": {
+    "title": "Block 1. Сырые инфоповоды",
+    "items": [
+      {
+        "headline": "ЦБ РФ повысит ключевую ставку на 0.5% в июне",
+        "source": "РБК",
+        "source_url": "https://www.rbc.ru",
+        "source_type": "top_media",
+        "date": "2026-05-29T15:30:21.546803",
+        "category": "economy",
+        "description": "Центральный банк России объявил о повышении ключевой ставки на 0.5% на своем следующем заседании совета директоров. Это может повлиять на курсы валют и стоимость кредитов.",
+        "emotional_trigger": "money",
+        "urgency": "urgent_48h"
+      },
+      {
+        "headline": "Мировые акции растут на фоне снижения инфляции в США",
+        "source": "Интерфакс",
+        "source_url": "https://www.interfax.ru",
+        "source_type": "top_media",
+        "date": "2026-05-28T15:30:21.546803",
+        "category": "economy",
+        "description": "Глобальные индексы акций показывают рост после публикации данных о замедлении инфляции в Соединенных Штатах. Инвесторы становятся более оптимистичны.",
+        "emotional_trigger": "opportunity",
+        "urgency": "eternal"
+      },
+      {
+        "headline": "Технологический стартап получил инвестиции в размере $50 млн",
+        "source": "TechNews",
+        "source_url": "https://technews.example.com",
+        "source_type": "local_tabloid",
+        "date": "2026-05-30T09:30:21.546803",
+        "category": "economy",
+        "description": "Молодой российский стартап, разрабатывающий AI-решения, привлек внушительный раунд финансирования от иностранных инвесторов.",
+        "emotional_trigger": "opportunity",
+        "urgency": "urgent_48h"
+      },
+      {
+        "headline": "Киноактер объявил о неожиданной роли в голливудском блокбастере",
+        "source": "Кино.ру",
+        "source_url": "https://kino.ru",
+        "source_type": "social_media",
+        "date": "2026-05-30T11:30:21.546803",
+        "category": "celebrity",
+        "description": "Известный российский актер объявил о своем участии в долгожданном голливудском фильме. Новость вызвала бурную реакцию фанатов в социальных сетях.",
+        "emotional_trigger": "trust",
+        "urgency": "eternal"
+      }
+    ]
+  },
+  "block_2": {
+    "title": "Block 2. Углы и идеи",
+    "items": [
+      {
+        "id": 1,
+        "news_id": "1234567890",
+        "angle_title": "Укрепляй финансовую независимость - ставка идет вверх",
+        "offer_connection": "Финансовые инструменты для защиты от инфляции",
+        "target_pain": "Страх потерять сбережения из-за инфляции",
+        "creative_type": "emotional",
+        "priority": "A"
+      },
+      {
+        "id": 2,
+        "news_id": "1234567890",
+        "angle_title": "Сейчас лучше взять кредит? Разбираемся в повышении ставок",
+        "offer_connection": "Консультация финансового советника",
+        "target_pain": "Неопределенность в финансовом планировании",
+        "creative_type": "news",
+        "priority": "A"
+      },
+      {
+        "id": 3,
+        "news_id": "0987654321",
+        "angle_title": "Глобальный рост - твой шанс заработать",
+        "offer_connection": "Инвестиционный портфель с акциями",
+        "target_pain": "Упустить возможность для роста капитала",
+        "creative_type": "investigation",
+        "priority": "B"
+      }
+    ]
+  },
+  "block_3": {
+    "title": "Block 3. Заголовки",
+    "grouped_by_angle": {
+      "1": [
+        {
+          "text": "ЦБ повысит ставки: как это повлияет на ваш кошелек?",
+          "angle_id": 1,
+          "format": "question",
+          "character_count": 52
+        },
+        {
+          "text": "Шокирующее изменение: ставки растут на 0.5% за одну ночь",
+          "angle_id": 1,
+          "format": "shock",
+          "character_count": 56
+        },
+        {
+          "text": "3 способа защитить сбережения от инфляции прямо сейчас",
+          "angle_id": 1,
+          "format": "number",
+          "character_count": 57
+        }
+      ],
+      "2": [
+        {
+          "text": "\"Это исторический момент\" - эксперты о новых ставках ЦБ",
+          "angle_id": 2,
+          "format": "quote",
+          "character_count": 56
+        },
+        {
+          "text": "Если не знаешь про эти скрытые комиссии - срочно читай",
+          "angle_id": 2,
+          "format": "intrigue",
+          "character_count": 55
+        }
+      ],
+      "3": [
+        {
+          "text": "Мировой рынок акций растет: упустишь ли ты выгоду?",
+          "angle_id": 3,
+          "format": "question",
+          "character_count": 52
+        }
+      ]
+    }
+  },
+  "block_4": {
+    "title": "Block 4. Рекомендации к тесту",
+    "top_5_angles": [
+      {
+        "id": 1,
+        "angle_title": "Укрепляй финансовую независимость - ставка идет вверх",
+        "reasoning": "Priority: A, Trigger: соответствует целевой аудитории",
+        "headlines": [
+          "ЦБ повысит ставки: как это повлияет на ваш кошелек?",
+          "Шокирующее изменение: ставки растут на 0.5% за одну ночь",
+          "3 способа защитить сбережения от инфляции прямо сейчас"
+        ]
+      },
+      {
+        "id": 2,
+        "angle_title": "Сейчас лучше взять кредит? Разбираемся в повышении ставок",
+        "reasoning": "Priority: A, Trigger: соответствует целевой аудитории",
+        "headlines": [
+          "\"Это исторический момент\" - эксперты о новых ставках ЦБ",
+          "Если не знаешь про эти скрытые комиссии - срочно читай"
+        ]
+      },
+      {
+        "id": 3,
+        "angle_title": "Глобальный рост - твой шанс заработать",
+        "reasoning": "Priority: B, Trigger: соответствует целевой аудитории",
+        "headlines": [
+          "Мировой рынок акций растет: упустишь ли ты выгоду?"
+        ]
+      }
+    ]
+  },
+  "block_5": {
+    "title": "Block 5. Риски",
+    "items": [
+      {
+        "news_id": "1234567890",
+        "legal_risks": [
+          "Проверить цитаты ЦБ на точность",
+          "Убедиться что не финансовый совет"
+        ],
+        "platform_ban_risk": "low",
+        "audience_negativity_risk": "medium",
+        "reputation_risk": "low",
+        "expiry_date": "48h"
+      },
+      {
+        "news_id": "0987654321",
+        "legal_risks": [
+          "Проверить источники исследования рынка"
+        ],
+        "platform_ban_risk": "low",
+        "audience_negativity_risk": "low",
+        "reputation_risk": "low",
+        "expiry_date": "eternal"
+      }
+    ]
+  },
+  "block_6": {
+    "title": "Block 6. Срочность",
+    "urgent": [
+      {
+        "headline": "ЦБ РФ повысит ключевую ставку на 0.5% в июне",
+        "urgency": "🔥 Срочно (48ч)"
+      },
+      {
+        "headline": "Технологический стартап получил инвестиции в размере $50 млн",
+        "urgency": "🔥 Срочно (48ч)"
+      }
+    ],
+    "eternal": [
+      {
+        "headline": "Мировые акции растут на фоне снижения инфляции в США",
+        "urgency": "⏳ Вечная тема"
+      },
+      {
+        "headline": "Киноактер объявил о неожиданной роли в голливудском блокбастере",
+        "urgency": "⏳ Вечная тема"
+      }
+    ]
+  },
+  "stats": {
+    "total_news": 4,
+    "total_angles": 3,
+    "total_headlines": 6,
+    "total_risks_assessed": 2
+  }
+}
