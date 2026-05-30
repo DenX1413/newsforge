@@ -98,7 +98,12 @@ def startup():
 # ── .env helpers ──────────────────────────────────────────────────────────────
 
 def _read_env() -> dict:
+    """Read env from .env file (local dev) with fallback to os.environ (production)."""
     result = {}
+    # First load from os.environ (Railway / production)
+    for k, v in os.environ.items():
+        result[k] = v
+    # Then overlay with .env file (local dev overrides)
     try:
         for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
             line = line.strip()
