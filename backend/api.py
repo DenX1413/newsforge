@@ -85,6 +85,12 @@ class SettingsPayload(BaseModel):
     google_oauth_client_id:      Optional[str] = None
     google_oauth_client_secret:  Optional[str] = None
     google_oauth_refresh_token:  Optional[str] = None
+    telegram_api_id:             Optional[str] = None
+    telegram_api_hash:           Optional[str] = None
+    telegram_session_string:     Optional[str] = None
+    telegram_channels_ru:        Optional[str] = None
+    telegram_channels_ua:        Optional[str] = None
+    telegram_channels_by:        Optional[str] = None
 
 
 # ── Startup ───────────────────────────────────────────────────────────────────
@@ -191,6 +197,33 @@ def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str 
                 print(f"[api] Using {len(liked_examples)} liked examples for {geo}")
 
             news_items_raw  = parser.aggregate_news(geo)
+
+            # Telegram channels — добавляем как дополнительный источник
+            try:
+                from telegram_channel_parser import parse_telegram_channels, TelegramNewsItem
+                from models import NewsItem as NewsItemModel
+                tg_items = parse_telegram_channels(geo, days=int(os.getenv("NEWS_COVERAGE_DAYS", "7")))
+                for tg in tg_items:
+                    # Конвертируем в формат NewsItem (модель пайплайна)
+                    ni = NewsItemModel(
+                        title=tg.title,
+                        source=tg.source,
+                        source_type="telegram",
+                        category="",
+                        description=tg.description,
+                        emotional_trigger="",
+                        urgency="week",
+                        geo=geo,
+                        original_url=tg.original_url,
+                        date=tg.published_at,
+                        news_id=str(hash(tg.title)),
+                    )
+                    news_items_raw.append(ni)
+                if tg_items:
+                    print(f"[api] Добавлено {len(tg_items)} новостей из Telegram-каналов")
+            except Exception as e:
+                print(f"[api] Telegram parser error: {e}")
+
             news_items_raw  = processor.classify_news(news_items_raw)
             angles_raw      = processor.generate_angles(news_items_raw, geo, liked_examples=liked_examples)
             headlines_raw   = processor.generate_headlines(angles_raw)
@@ -951,6 +984,11 @@ def get_settings():
         "sa_email":                sa_email,
         "gdocs_oauth_configured":  oauth_ok,
         "gdocs_auth_mode":         "oauth" if oauth_ok else ("service_account" if gdocs_ok else "none"),
+        "telegram_channels_configured": (
+            configured("TELEGRAM_API_ID") and
+            configured("TELEGRAM_API_HASH") and
+            configured("TELEGRAM_SESSION_STRING")
+        ),
     }
 
 
@@ -987,6 +1025,18 @@ def save_settings(payload: SettingsPayload):
         updates["GOOGLE_OAUTH_CLIENT_SECRET"] = payload.google_oauth_client_secret
     if payload.google_oauth_refresh_token is not None:
         updates["GOOGLE_OAUTH_REFRESH_TOKEN"] = payload.google_oauth_refresh_token
+    if payload.telegram_api_id is not None:
+        updates["TELEGRAM_API_ID"] = payload.telegram_api_id
+    if payload.telegram_api_hash is not None:
+        updates["TELEGRAM_API_HASH"] = payload.telegram_api_hash
+    if payload.telegram_session_string is not None:
+        updates["TELEGRAM_SESSION_STRING"] = payload.telegram_session_string
+    if payload.telegram_channels_ru is not None:
+        updates["TELEGRAM_CHANNELS_RU"] = payload.telegram_channels_ru
+    if payload.telegram_channels_ua is not None:
+        updates["TELEGRAM_CHANNELS_UA"] = payload.telegram_channels_ua
+    if payload.telegram_channels_by is not None:
+        updates["TELEGRAM_CHANNELS_BY"] = payload.telegram_channels_by
 
     if updates:
         _write_env(updates)
