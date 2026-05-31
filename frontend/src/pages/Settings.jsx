@@ -4,9 +4,11 @@ import {
   Settings, Bell, Globe, Eye, EyeOff, CheckCircle,
   XCircle, Send, Save, RotateCw, AlertCircle, Link,
   FileText, ChevronDown, ChevronRight, ExternalLink, ArrowLeft,
+  Sun, Moon, Monitor,
 } from "lucide-react";
 import { useSettings, saveSettings, testNotify } from "../hooks/useApi.js";
 import { GeoFlag } from "../components/ReportCard.jsx";
+import { useTheme } from "../hooks/useTheme.js";
 
 const GEOS_ALL = ["RU", "UA", "BY", "KZ", "DE", "PL"];
 
@@ -115,6 +117,7 @@ function Collapsible({ label, children }) {
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { settings, loading, refetch } = useSettings();
+  const { theme, setTheme } = useTheme();
 
   const [form, setForm] = useState({
     telegram_bot_token:          "",
@@ -654,6 +657,35 @@ export default function SettingsPage() {
         {settings?.anthropic_configured && (
           <span className="text-xs text-gray-600">Ключ задан в .env — не меняется через UI</span>
         )}
+      </div>
+
+      {/* ── Тема ── */}
+      <div className="card space-y-3">
+        <h2 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+          <Sun size={15} className="text-amber-400" /> Тема оформления
+        </h2>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { value: "system", icon: Monitor, label: "Системная", hint: "Как в ОС" },
+            { value: "light",  icon: Sun,     label: "Светлая",   hint: "Молочная" },
+            { value: "dark",   icon: Moon,    label: "Тёмная",    hint: "По умолчанию" },
+          ].map(({ value, icon: Icon, label, hint }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setTheme(value)}
+              className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-medium transition-all ${
+                theme === value
+                  ? "border-sky-500 bg-sky-500/15 text-sky-300"
+                  : "border-gray-700 text-gray-500 hover:border-gray-600 hover:text-gray-400"
+              }`}
+            >
+              <Icon size={18} className={theme === value ? "text-sky-400" : "text-gray-500"} />
+              <span className="font-semibold">{label}</span>
+              <span className="text-[10px] font-normal text-gray-600">{hint}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Save button ── */}
