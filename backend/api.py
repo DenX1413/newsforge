@@ -204,19 +204,18 @@ def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str 
                 from models import NewsItem as NewsItemModel
                 tg_items = parse_telegram_channels(geo, days=int(os.getenv("NEWS_COVERAGE_DAYS", "7")))
                 for tg in tg_items:
-                    # Конвертируем в формат NewsItem (модель пайплайна)
                     ni = NewsItemModel(
-                        title=tg.title,
-                        source=tg.source,
-                        source_type="telegram",
-                        category="",
-                        description=tg.description,
-                        emotional_trigger="",
-                        urgency="week",
-                        geo=geo,
-                        original_url=tg.original_url,
-                        date=tg.published_at,
-                        news_id=str(hash(tg.title)),
+                        title            = tg.title,
+                        source           = tg.source,
+                        source_url       = tg.original_url or f"https://t.me/{tg.source}",
+                        source_type      = "telegram",
+                        category         = "",
+                        description      = tg.description,
+                        emotional_trigger= "",
+                        urgency          = "week",
+                        geo              = geo,
+                        original_url     = tg.original_url,
+                        date             = tg.published_at or datetime.utcnow(),
                     )
                     news_items_raw.append(ni)
                 if tg_items:
