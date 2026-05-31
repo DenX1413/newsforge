@@ -86,11 +86,17 @@ html.light {
 @media (prefers-color-scheme: light) {
 
   /* Фоны */
-  .bg-gray-950  { background-color: var(--bg-body)  !important; }
-  .bg-gray-900  { background-color: var(--bg-muted) !important; }
-  .bg-gray-800  { background-color: var(--bg-input) !important; }
+  .bg-gray-950    { background-color: var(--bg-body)  !important; }
+  .bg-gray-900    { background-color: var(--bg-muted) !important; }
+  .bg-gray-800    { background-color: var(--bg-input) !important; }
+  .bg-gray-700    { background-color: var(--bg-hover) !important; }
+  .bg-gray-800\/10 { background-color: rgba(240,235,227,0.1) !important; }
+  .bg-gray-800\/20 { background-color: rgba(240,235,227,0.2) !important; }
+  .bg-gray-800\/40 { background-color: rgba(220,213,203,0.3) !important; }
   .bg-gray-800\/50 { background-color: rgba(240,235,227,0.5) !important; }
   .bg-gray-800\/60 { background-color: rgba(240,235,227,0.6) !important; }
+  .bg-gray-900\/95 { background-color: rgba(247,243,238,0.97) !important; }
+  .bg-gray-900\/80 { background-color: rgba(247,243,238,0.8) !important; }
   .bg-gray-950\/40 { background-color: rgba(244,239,232,0.7) !important; }
   .bg-gray-950\/30 { background-color: rgba(244,239,232,0.5) !important; }
 
@@ -131,11 +137,17 @@ html.light {
 }
 
 /* Tailwind overrides для явного класса .light */
-html.light .bg-gray-950  { background-color: var(--bg-body)  !important; }
-html.light .bg-gray-900  { background-color: var(--bg-muted) !important; }
-html.light .bg-gray-800  { background-color: var(--bg-input) !important; }
+html.light .bg-gray-950    { background-color: var(--bg-body)  !important; }
+html.light .bg-gray-900    { background-color: var(--bg-muted) !important; }
+html.light .bg-gray-800    { background-color: var(--bg-input) !important; }
+html.light .bg-gray-700    { background-color: var(--bg-hover) !important; }
+html.light .bg-gray-800\/10 { background-color: rgba(240,235,227,0.1) !important; }
+html.light .bg-gray-800\/20 { background-color: rgba(240,235,227,0.2) !important; }
+html.light .bg-gray-800\/40 { background-color: rgba(220,213,203,0.3) !important; }
 html.light .bg-gray-800\/50 { background-color: rgba(240,235,227,0.5) !important; }
 html.light .bg-gray-800\/60 { background-color: rgba(240,235,227,0.6) !important; }
+html.light .bg-gray-900\/95 { background-color: rgba(247,243,238,0.97) !important; }
+html.light .bg-gray-900\/80 { background-color: rgba(247,243,238,0.8) !important; }
 html.light .bg-gray-950\/40 { background-color: rgba(244,239,232,0.7) !important; }
 html.light .bg-gray-950\/30 { background-color: rgba(244,239,232,0.5) !important; }
 html.light .border-gray-700 { border-color: var(--border-2) !important; }
