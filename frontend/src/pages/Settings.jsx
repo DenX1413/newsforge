@@ -528,19 +528,53 @@ export default function SettingsPage() {
           </div>
         </Field>
 
-        <Field label="Период покрытия новостей (дней)"
+        <Field label="Период покрытия новостей"
                hint="Статьи старше этого срока игнорируются. Рекомендовано: 5–7 дней.">
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={1} max={30} step={1}
-              value={form.news_coverage_days}
-              onChange={e => set("news_coverage_days", Number(e.target.value))}
-              className="flex-1 accent-sky-500"
-            />
-            <span className="text-sm font-semibold text-white w-8 text-right tabular-nums">
-              {form.news_coverage_days}
-            </span>
+          <div className="space-y-3">
+            {/* Presets */}
+            <div className="grid grid-cols-5 gap-1.5">
+              {[
+                { days: 1,  label: "1 д",   hint: "Сегодня"   },
+                { days: 3,  label: "3 дня",  hint: "Трендово"  },
+                { days: 7,  label: "7 дней", hint: "Рекомендуем", rec: true },
+                { days: 14, label: "2 нед",  hint: "Широко"    },
+                { days: 30, label: "30 дней",hint: "Архивно"   },
+              ].map(({ days, label, hint, rec }) => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => set("news_coverage_days", days)}
+                  className={`relative flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg border text-xs font-medium transition-all ${
+                    form.news_coverage_days === days
+                      ? "border-sky-500 bg-sky-500/15 text-sky-300"
+                      : "border-gray-700 text-gray-500 hover:border-gray-600 hover:text-gray-400"
+                  }`}
+                >
+                  {rec && (
+                    <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 text-[9px] bg-sky-500 text-white px-1 rounded-full leading-tight">
+                      ★
+                    </span>
+                  )}
+                  <span className={`text-sm font-bold tabular-nums ${form.news_coverage_days === days ? "text-sky-300" : "text-gray-400"}`}>
+                    {days}
+                  </span>
+                  <span className="text-[10px] text-gray-600 font-normal">{hint}</span>
+                </button>
+              ))}
+            </div>
+            {/* Custom slider for non-preset values */}
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={1} max={30} step={1}
+                value={form.news_coverage_days}
+                onChange={e => set("news_coverage_days", Number(e.target.value))}
+                className="flex-1 accent-sky-500 h-1"
+              />
+              <span className="text-sm font-bold text-white w-16 text-right tabular-nums shrink-0">
+                {form.news_coverage_days} {form.news_coverage_days === 1 ? "день" : form.news_coverage_days < 5 ? "дня" : "дней"}
+              </span>
+            </div>
           </div>
         </Field>
 
