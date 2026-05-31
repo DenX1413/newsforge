@@ -13,10 +13,10 @@ from typing import Optional
 # ── Дефолтные каналы по GEO ──────────────────────────────────────────────────
 
 DEFAULT_CHANNELS: dict[str, list[str]] = {
-    "RU": ["rian_ru", "tass_agency", "rbc_news", "mash"],
-    "UA": ["ukrpravda_news", "suspilne_ua", "unian_news"],
-    "BY": ["nexta_tv", "zerkalo_io"],
-    "KZ": ["tengrinews", "kazinform_ru"],
+    "RU": ["novosti_russia360", "ria_novosti_russya", "rossia_now"],
+    "UA": ["ukraina_novosti", "tipichna_ukraine", "kievreal1"],
+    "BY": ["belarusian_silovik", "minskctvby", "belteanews"],
+    "KZ": ["tengrinews", "ztb_qaz", "zakonkz"],
     "PL": ["polsat_news"],
     "DE": ["spiegelnews"],
 }
