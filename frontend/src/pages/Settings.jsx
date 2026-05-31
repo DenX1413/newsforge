@@ -569,7 +569,8 @@ export default function SettingsPage() {
                 min={1} max={30} step={1}
                 value={form.news_coverage_days}
                 onChange={e => set("news_coverage_days", Number(e.target.value))}
-                className="flex-1 accent-sky-500 h-1"
+                className="flex-1 slider"
+                style={{ "--val": form.news_coverage_days }}
               />
               <span className="text-sm font-bold text-white w-16 text-right tabular-nums shrink-0">
                 {form.news_coverage_days} {form.news_coverage_days === 1 ? "день" : form.news_coverage_days < 5 ? "дня" : "дней"}
