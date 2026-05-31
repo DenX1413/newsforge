@@ -728,7 +728,7 @@ export default function ReportDetail() {
                   className="flex-1 bg-gray-800 border border-sky-500/60 rounded-lg px-3 py-1.5 text-lg font-bold text-white placeholder-gray-600 focus:outline-none"
                 />
                 <button onClick={saveTitle}  disabled={titleSaving} className="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10"><Check size={16} /></button>
-                <button onClick={cancelTitle} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-700"><X size={16} /></button>
+                <button onClick={cancelTitle} className="p-1.5 rounded-lg text-gray-500 hover:bg-sky-500/10 hover:text-sky-400"><X size={16} /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2 mb-1 group/htitle">
@@ -856,7 +856,7 @@ export default function ReportDetail() {
                   </button>
                   <button
                     onClick={() => setConfirmDelete(false)}
-                    className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 hover:bg-gray-700"
+                    className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 hover:bg-sky-500/15 hover:text-sky-400"
                   >
                     Нет
                   </button>

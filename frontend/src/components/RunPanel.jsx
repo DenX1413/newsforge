@@ -137,7 +137,7 @@ export default function RunPanel({ onDone }) {
               className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all select-none flex items-center gap-1.5 ${
                 selected.has(g)
                   ? GEO_SEL[g]
-                  : "border-gray-700 text-gray-600 hover:text-gray-400 hover:border-gray-600 bg-transparent"
+                  : "border-gray-700 text-gray-600 hover:text-sky-400 hover:border-sky-500/50 bg-transparent"
               }`}
             >
               <GeoFlag geo={g} size={16} />{g}

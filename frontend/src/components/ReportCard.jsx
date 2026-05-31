@@ -105,7 +105,7 @@ function TitleEditor({ reportId, initialTitle, onSaved }) {
         </button>
         <button
           onClick={cancel}
-          className="p-1 rounded text-gray-500 hover:bg-gray-700 transition-colors shrink-0"
+          className="p-1 rounded text-gray-500 hover:bg-sky-500/10 hover:text-sky-400 transition-colors shrink-0"
         >
           <X size={13} />
         </button>
@@ -160,7 +160,7 @@ export default function ReportCard({ report, onDelete, onFavoriteToggle }) {
     <div
       onClick={() => { if (clickable && !confirm) navigate(`/report/${report.id}`); }}
       className={`card flex flex-col gap-2 py-3 transition-all ${
-        clickable && !confirm ? "cursor-pointer hover:border-gray-600 hover:bg-gray-800/40" : "opacity-90"
+        clickable && !confirm ? "cursor-pointer hover:border-sky-500/50 hover:bg-sky-500/5" : "opacity-90"
       }`}
     >
       {/* ── Top row ── */}
@@ -236,7 +236,7 @@ export default function ReportCard({ report, onDelete, onFavoriteToggle }) {
               </button>
               <button
                 onClick={() => setConfirm(false)}
-                className="text-xs px-2 py-1 rounded-md bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors"
+                className="text-xs px-2 py-1 rounded-md bg-gray-800 text-gray-400 hover:bg-sky-500/15 hover:text-sky-400 transition-colors"
               >
                 Нет
               </button>

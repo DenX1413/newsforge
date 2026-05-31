@@ -54,7 +54,7 @@ export default function Layout() {
             className={`p-1.5 rounded-lg transition-colors ${
               onSettings
                 ? "bg-gray-700 text-white"
-                : "text-gray-600 hover:text-gray-300 hover:bg-gray-800"
+                : "text-gray-600 hover:text-sky-400 hover:bg-sky-500/10"
             }`}
             title="Настройки"
           >

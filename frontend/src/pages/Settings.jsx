@@ -52,7 +52,7 @@ function TokenInput({ value, onChange, placeholder, configured }) {
       <button
         type="button"
         onClick={() => setShow(v => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-sky-400"
       >
         {show ? <EyeOff size={14} /> : <Eye size={14} />}
       </button>
@@ -100,7 +100,7 @@ function Collapsible({ label, children }) {
     <div className="border border-gray-800 rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-500 hover:text-sky-400 hover:bg-sky-500/5 transition-colors"
       >
         <span>{label}</span>
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -218,7 +218,7 @@ export default function SettingsPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
-          className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+          className="p-1.5 rounded-lg text-gray-500 hover:text-sky-400 hover:bg-sky-500/10 transition-colors"
         >
           <ArrowLeft size={18} />
         </button>
@@ -248,7 +248,7 @@ export default function SettingsPage() {
               className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-medium transition-all ${
                 theme === value
                   ? "border-sky-500 bg-sky-500/15 text-sky-300"
-                  : "border-gray-700 text-gray-500 hover:border-gray-600 hover:text-gray-400"
+                  : "border-gray-700 text-gray-500 hover:border-sky-500/50 hover:text-sky-400"
               }`}
             >
               <Icon size={18} className={theme === value ? "text-sky-400" : "text-gray-500"} />
@@ -270,7 +270,7 @@ export default function SettingsPage() {
           <button
             onClick={() => handleTest("telegram")}
             disabled={!!testing || !settings?.telegram_configured}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-sky-500/15 hover:text-sky-300 text-gray-300 disabled:opacity-40 transition-colors"
           >
             {testing === "telegram"
               ? <RotateCw size={12} className="animate-spin" />
@@ -348,7 +348,7 @@ export default function SettingsPage() {
           <button
             onClick={() => handleTest("slack")}
             disabled={!!testing || !settings?.slack_configured}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-sky-500/15 hover:text-sky-300 text-gray-300 disabled:opacity-40 transition-colors"
           >
             {testing === "slack"
               ? <RotateCw size={12} className="animate-spin" />
@@ -623,7 +623,7 @@ export default function SettingsPage() {
                   className={`relative flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg border text-xs font-medium transition-all ${
                     form.news_coverage_days === days
                       ? "border-sky-500 bg-sky-500/15 text-sky-300"
-                      : "border-gray-700 text-gray-500 hover:border-gray-600 hover:text-gray-400"
+                      : "border-gray-700 text-gray-500 hover:border-sky-500/50 hover:text-sky-400"
                   }`}
                 >
                   {rec && (
@@ -665,7 +665,7 @@ export default function SettingsPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${
                   selectedGeos.has(g)
                     ? "border-sky-500/60 bg-sky-500/15 text-sky-300"
-                    : "border-gray-700 text-gray-600 hover:border-gray-600 hover:text-gray-400"
+                    : "border-gray-700 text-gray-600 hover:border-sky-500/50 hover:text-sky-400"
                 }`}
               >
                 <GeoFlag geo={g} size={16} />{g}
