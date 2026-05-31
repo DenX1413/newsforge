@@ -867,10 +867,13 @@ export default function ReportDetail() {
         </div>
       </div>
 
-      {/* ── Block 6 ── */}
-      {report.news.length > 0 && <UrgencyBlock news={report.news} />}
+      {/* ── Блок 1. Инфоповоды ── */}
+      {report.news.length > 0 && <NewsSection items={report.news} />}
 
-      {/* ── Block 4 ── */}
+      {/* ── Блок 2+3. Углы и заголовки ── */}
+      {report.angles.length > 0 && <AnglesSection angles={report.angles} />}
+
+      {/* ── Блок 4. Рекомендации к тесту ── */}
       {report.recommendations?.length > 0 && (
         <section className="space-y-3">
           <SectionTitle icon={TrendingUp} iconCls="text-amber-400" count={report.recommendations.length}>
@@ -884,19 +887,16 @@ export default function ReportDetail() {
         </section>
       )}
 
-      {/* ── What worked ── */}
+      {/* ── Блок 5. Риски ── */}
+      <RisksSection risks={risks} />
+
+      {/* ── Блок 6. Срочность ── */}
+      {report.news.length > 0 && <UrgencyBlock news={report.news} />}
+
+      {/* ── Обратная связь по прошлым выпускам ── */}
       {report.prev_performance?.count > 0 && (
         <PrevPerformance prev={report.prev_performance} prevReportId={report.prev_report_id} />
       )}
-
-      {/* ── Block 1 ── */}
-      {report.news.length > 0 && <NewsSection items={report.news} />}
-
-      {/* ── Blocks 2+3 ── */}
-      {report.angles.length > 0 && <AnglesSection angles={report.angles} />}
-
-      {/* ── Block 5 ── */}
-      <RisksSection risks={risks} />
     </div>
   );
 }
