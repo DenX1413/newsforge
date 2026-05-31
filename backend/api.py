@@ -741,9 +741,13 @@ def export_report_gdocs(report_id: int, db: Session = Depends(get_db)):
 
 @app.delete("/api/reports/{report_id}")
 def delete_report(report_id: int, db: Session = Depends(get_db)):
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if not report:
+        raise HTTPException(404, "Report not found")
     db.query(Headline).filter(Headline.report_id == report_id).delete()
     db.query(Angle).filter(Angle.report_id == report_id).delete()
     db.query(NewsItem).filter(NewsItem.report_id == report_id).delete()
+    db.query(RiskItem).filter(RiskItem.report_id == report_id).delete()
     db.query(Report).filter(Report.id == report_id).delete()
     db.commit()
     return {"ok": True}
