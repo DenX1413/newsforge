@@ -129,9 +129,6 @@ export default function SettingsPage() {
     google_oauth_client_id:      "",
     google_oauth_client_secret:  "",
     google_oauth_refresh_token:  "",
-    telegram_api_id:             "",
-    telegram_api_hash:           "",
-    telegram_session_string:     "",
     telegram_channels_ru:        "",
     telegram_channels_ua:        "",
     telegram_channels_by:        "",
@@ -186,9 +183,6 @@ export default function SettingsPage() {
       if (!payload.google_oauth_client_id?.trim())    delete payload.google_oauth_client_id;
       if (!payload.google_oauth_client_secret?.trim()) delete payload.google_oauth_client_secret;
       if (!payload.google_oauth_refresh_token?.trim()) delete payload.google_oauth_refresh_token;
-      if (!payload.telegram_api_id?.trim())         delete payload.telegram_api_id;
-      if (!payload.telegram_api_hash?.trim())       delete payload.telegram_api_hash;
-      if (!payload.telegram_session_string?.trim()) delete payload.telegram_session_string;
       if (!payload.telegram_channels_ru?.trim())    delete payload.telegram_channels_ru;
       if (!payload.telegram_channels_ua?.trim())    delete payload.telegram_channels_ua;
       if (!payload.telegram_channels_by?.trim())    delete payload.telegram_channels_by;
@@ -391,62 +385,21 @@ export default function SettingsPage() {
       </Section>
 
       {/* ── Telegram каналы ── */}
-      <Section title="Telegram-каналы (источник новостей)" icon={Bell}
-               badge={settings?.telegram_channels_configured ? "подключён" : undefined}>
+      <Section title="Telegram-каналы (источник новостей)" icon={Bell} badge="активен">
         <p className="text-xs text-gray-500">
-          Парсит публичные Telegram-каналы и добавляет их новости в отчёт.
-          Требует отдельных API-ключей (не Bot Token).
+          Автоматически читает публичные Telegram-каналы через RSS — без ключей и авторизации.
+          Укажи каналы для нужных GEO или оставь пустым для дефолтных.
         </p>
-
-        <Collapsible label="📋 Как подключить — пошаговая инструкция">
-          <GuideStep num="1">
-            Открой <a href="https://my.telegram.org" target="_blank" rel="noreferrer"
-              className="text-sky-400 underline inline-flex items-center gap-0.5">
-              my.telegram.org <ExternalLink size={10} />
-            </a> → войди → <b className="text-gray-400">API development tools</b>
-          </GuideStep>
-          <GuideStep num="2">
-            Создай приложение → получи <b className="text-gray-400">App api_id</b> и <b className="text-gray-400">App api_hash</b>
-          </GuideStep>
-          <GuideStep num="3">
-            Запусти скрипт авторизации:{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">python setup_telegram_session.py</code>
-            {" "}— введи номер телефона и код из Telegram
-          </GuideStep>
-          <GuideStep num="4">
-            Скопируй <b className="text-gray-400">TELEGRAM_SESSION_STRING</b> из вывода скрипта → вставь ниже
-          </GuideStep>
-          <GuideStep num="5">
-            Укажи каналы для нужных GEO через запятую (без @). Если оставить пусто — используются каналы по умолчанию.
-          </GuideStep>
-        </Collapsible>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="API ID" hint="Число из my.telegram.org">
-            <input type="text" value={form.telegram_api_id}
-              onChange={e => set("telegram_api_id", e.target.value)}
-              placeholder={settings?.telegram_channels_configured ? "уже задан" : "12345678"}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors" />
-          </Field>
-          <Field label="API Hash" hint="Строка из my.telegram.org">
-            <TokenInput value={form.telegram_api_hash}
-              onChange={v => set("telegram_api_hash", v)}
-              placeholder="abc123..."
-              configured={settings?.telegram_channels_configured} />
-          </Field>
+        <div className="text-xs text-emerald-400 flex items-center gap-1.5">
+          <CheckCircle size={12} /> Работает без настройки — каналы по умолчанию уже заданы
         </div>
-
-        <Field label="Session String" hint="Получи через: python setup_telegram_session.py">
-          <TokenInput value={form.telegram_session_string}
-            onChange={v => set("telegram_session_string", v)}
-            placeholder="1BVtsOK8Bu..."
-            configured={settings?.telegram_channels_configured} />
-        </Field>
-
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-400">Каналы по GEO <span className="text-gray-600 font-normal">(через запятую, без @)</span></p>
+          <p className="text-xs font-medium text-gray-400">
+            Каналы по GEO{" "}
+            <span className="text-gray-600 font-normal">(через запятую, без @)</span>
+          </p>
           {[
-            ["RU", "telegram_channels_ru", "rian_ru, tass_agency, rbc_news, mash"],
+            ["RU", "telegram_channels_ru", "rian_ru, tass_agency, rbc_news, mash, readovkaru"],
             ["UA", "telegram_channels_ua", "ukrpravda_news, suspilne_ua, unian_news"],
             ["BY", "telegram_channels_by", "nexta_tv, zerkalo_io"],
           ].map(([geo, key, ph]) => (
@@ -454,7 +407,7 @@ export default function SettingsPage() {
               <span className="text-xs font-bold text-gray-400 w-8 shrink-0">{geo}</span>
               <input type="text" value={form[key]}
                 onChange={e => set(key, e.target.value)}
-                placeholder={ph}
+                placeholder={`По умолчанию: ${ph}`}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors" />
             </div>
           ))}

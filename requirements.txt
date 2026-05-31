@@ -29,5 +29,5 @@ python-docx==1.2.0
 # Static files
 aiofiles==23.2.1
 
-# Telegram channel parser
-telethon==1.36.0
+# Telegram channel parser (via RSS, no auth needed)
+# telethon not required
