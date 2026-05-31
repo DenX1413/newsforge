@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Settings, Bell, Globe, Eye, EyeOff, CheckCircle,
   XCircle, Send, Save, RotateCw, AlertCircle, Link,
-  FileText, ChevronDown, ChevronRight, ExternalLink,
+  FileText, ChevronDown, ChevronRight, ExternalLink, ArrowLeft,
 } from "lucide-react";
 import { useSettings, saveSettings, testNotify } from "../hooks/useApi.js";
 import { GeoFlag } from "../components/ReportCard.jsx";
@@ -112,6 +113,7 @@ function Collapsible({ label, children }) {
 }
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const { settings, loading, refetch } = useSettings();
 
   const [form, setForm] = useState({
@@ -204,7 +206,13 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
-      <div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+        >
+          <ArrowLeft size={18} />
+        </button>
         <h1 className="text-lg font-bold text-white flex items-center gap-2">
           <Settings size={18} className="text-gray-400" /> Настройки
         </h1>
