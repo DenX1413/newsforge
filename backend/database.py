@@ -7,7 +7,7 @@ from datetime import datetime
 # In production (Railway) set DATA_DIR=/data to store DB on a persistent volume
 _data_dir = os.getenv("DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
 os.makedirs(_data_dir, exist_ok=True)   # create /data if missing
-DATABASE_URL = f"sqlite:///{_data_dir}/spotika.db"
+DATABASE_URL = f"sqlite:///{_data_dir}/newsforge.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
