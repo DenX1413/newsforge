@@ -4,7 +4,7 @@ import {
   ArrowLeft, Newspaper, Lightbulb, Type, ThumbsUp, ThumbsDown,
   Clock, Zap, ExternalLink, Copy, Check, Star, Shield,
   AlertTriangle, TrendingUp, History, ChevronDown, ChevronUp,
-  Search, X, Filter, Trash2, FileText, Printer, Pencil,
+  Search, X, Filter, Trash2, Pencil,
 } from "lucide-react";
 import { useReport, setFeedback, deleteReport, toggleFavorite, updateReportTitle } from "../hooks/useApi.js";
 import { GeoFlag } from "../components/ReportCard.jsx";
@@ -91,61 +91,6 @@ function buildExportText(report) {
   return lines.join("\n");
 }
 
-function buildPrintHtml(report) {
-  const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const date = new Date(report.created_at).toLocaleString("ru-RU", {day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
-
-  const newsHtml = report.news.map((n,i) => {
-    const badge = n.urgency==="urgent_48h" ? `<span style="color:#ef4444">🔥 Срочно</span>` : n.urgency==="eternal" ? `<span style="color:#6b7280">♾ Вечная</span>` : "";
-    const pubDate = n.published_at ? new Date(n.published_at).toLocaleDateString("ru-RU", {day:"numeric",month:"short",year:"numeric"}) : "";
-    return `<div style="margin-bottom:10px;padding:10px;background:#f9fafb;border-radius:6px;border-left:3px solid #e5e7eb">
-      <div style="font-weight:600;color:#111">${i+1}. ${esc(n.title)} ${badge}</div>
-      <div style="font-size:12px;color:#6b7280;margin-top:3px">
-        ${n.source ? `<b>${esc(n.source)}</b> · ` : ""}${esc(SOURCE_TYPE_RU[n.source_type] ?? n.source_type)}${pubDate ? ` · ${pubDate}` : ""}
-      </div>
-    </div>`;
-  }).join("");
-
-  const anglesHtml = report.angles.map((a,i) => {
-    const hl = a.headlines.map(h => `<li style="margin:3px 0;color:#374151">${esc(h.text)}</li>`).join("");
-    const pCls = a.priority==="A" ? "#16a34a" : a.priority==="B" ? "#d97706" : "#6b7280";
-    return `<div style="margin-bottom:16px;padding:12px;border:1px solid #e5e7eb;border-radius:8px">
-      <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:6px">
-        <span style="background:${pCls};color:#fff;padding:1px 7px;border-radius:4px;font-size:12px;margin-right:6px">${esc(a.priority)}</span>${esc(a.angle_title)}
-      </div>
-      ${a.target_pain ? `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>Боль:</b> ${esc(a.target_pain)}</div>` : ""}
-      ${a.offer_connection ? `<div style="font-size:12px;color:#6b7280;margin-bottom:6px"><b>Оффер:</b> ${esc(a.offer_connection)}</div>` : ""}
-      ${hl ? `<div style="font-size:13px;font-weight:600;margin-bottom:4px">Заголовки:</div><ul style="margin:0;padding-left:20px">${hl}</ul>` : ""}
-    </div>`;
-  }).join("");
-
-  const recsHtml = (report.recommendations ?? []).slice(0,5).map(r =>
-    `<div style="margin-bottom:10px;padding:10px;background:#fffbeb;border-radius:6px;border-left:3px solid #f59e0b">
-      <div style="font-weight:700">${esc(r.rank)}. ${esc(r.angle_title)}</div>
-      ${r.reasoning ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${esc(r.reasoning)}</div>` : ""}
-    </div>`
-  ).join("");
-
-  return `<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>NewsForge — ${esc(report.geo)} #${report.id}</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',Arial,sans-serif;font-size:14px;color:#111;padding:32px;max-width:900px;margin:0 auto}
-    h1{font-size:22px;font-weight:800;margin-bottom:4px}
-    h2{font-size:16px;font-weight:700;margin:24px 0 12px;padding-bottom:6px;border-bottom:2px solid #e5e7eb}
-    .meta{font-size:13px;color:#6b7280;margin-bottom:24px}
-    @media print{body{padding:16px}h2{break-before:auto}}
-  </style></head><body>
-  <h1>NewsForge — Отчёт ${esc(report.geo)} #${report.id}</h1>
-  <div class="meta">
-    ${date}${report.team_lead ? ` · Тимлид: ${esc(report.team_lead)}` : ""}
-    &nbsp;·&nbsp; ${report.stats.total_news} инфоповодов · ${report.stats.total_angles} углов · ${report.stats.total_headlines} заголовков
-  </div>
-  ${recsHtml ? `<h2>Топ-5 рекомендаций к тесту</h2>${recsHtml}` : ""}
-  ${anglesHtml ? `<h2>Маркетинговые углы (${report.angles.length})</h2>${anglesHtml}` : ""}
-  ${newsHtml ? `<h2>Инфоповоды (${report.news.length})</h2>${newsHtml}` : ""}
-  </body></html>`;
-}
 
 function downloadTxt(text, filename) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -669,50 +614,6 @@ export default function ReportDetail() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePdf = () => {
-    const html = buildPrintHtml(report);
-
-    // srcdoc iframe is always same-origin → contentWindow.print() works
-    // in all Chromium-based browsers (Chrome, Opera, Yandex, Edge)
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText =
-      "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;opacity:0;";
-    document.body.appendChild(iframe);
-
-    const cleanup = () => {
-      try { document.body.removeChild(iframe); } catch (_) {}
-    };
-
-    iframe.addEventListener("load", () => {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(cleanup, 3000);
-      } catch (_) {
-        // Final fallback: download as HTML file
-        cleanup();
-        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement("a");
-        a.href     = url;
-        a.download = `newsforge-${report.geo}-${report.id}.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-      }
-    }, { once: true });
-
-    iframe.srcdoc = html;
-  };
-
-  const handleDocx = () => {
-    const a = document.createElement("a");
-    a.href = `/api/reports/${report.id}/export.docx`;
-    a.download = `newsforge-${report.geo}-${report.id}.docx`;
-    a.click();
-  };
-
   const handleDelete = async () => {
     setDeleting(true);
     await deleteReport(report.id);
@@ -863,22 +764,6 @@ export default function ReportDetail() {
               >
                 {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                 {copied ? t("copied") : t("copy")}
-              </button>
-
-              <button
-                onClick={handlePdf}
-                className="btn-ghost py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
-                title="Сохранить как PDF"
-              >
-                <Printer size={13} /> PDF
-              </button>
-
-              <button
-                onClick={handleDocx}
-                className="btn-ghost py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
-                title="Скачать DOCX"
-              >
-                <FileText size={13} /> DOCX
               </button>
 
               {report.gdocs_url && (
