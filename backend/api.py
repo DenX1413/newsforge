@@ -847,7 +847,7 @@ def list_schedule(db: Session = Depends(get_db)):
          "last_run": rows[geo].last_run.isoformat() if geo in rows and rows[geo].last_run else None,
          "next_run": rows[geo].next_run.isoformat() if geo in rows and rows[geo].next_run else None,
          "scheduler_available": _SCHEDULER_AVAILABLE}
-        for geo in ["RU", "UA", "BY", "KZ", "DE", "PL"]
+        for geo in ["RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"]
     ]
 
 
