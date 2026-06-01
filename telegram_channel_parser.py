@@ -53,8 +53,10 @@ def get_channels_for_geo(geo: str) -> list[str]:
 
 
 def _clean(html_str: str) -> str:
-    """Убирает HTML теги и лишние пробелы."""
+    """Убирает HTML теги, декодирует HTML-сущности и лишние пробелы."""
+    import html as _html
     text = re.sub(r"<[^>]+>", " ", html_str)
+    text = _html.unescape(text)
     return re.sub(r"\s+", " ", text).strip()
 
 

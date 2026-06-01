@@ -86,7 +86,9 @@ class NewsParser:
         return datetime.now()
 
     def _clean_html(self, text: str) -> str:
-        return re.sub(r"<[^>]+>", "", text or "").strip()
+        import html as _html
+        text = re.sub(r"<[^>]+>", "", text or "")
+        return _html.unescape(text).strip()
 
     def _make_news_item(self, title: str, source: str, source_url: str,
                         source_type: str, pub_date: datetime, description: str,

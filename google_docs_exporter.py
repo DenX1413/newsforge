@@ -371,9 +371,26 @@ def create_report_doc(report_data: dict) -> Optional[str]:
                            f"https://docs.google.com/document/d/{doc_id}/edit")
 
         _, reqs = _build_all_blocks(report_data)
+
+        # Insert all text first, then apply styles in chunks of 300.
+        # Keeps each batchUpdate payload small and avoids Google API timeouts
+        # on large reports (30+ news items → 900+ style requests).
+        insert_req = [reqs[0]]   # insertText
+        style_reqs = reqs[1:]    # updateParagraphStyle / updateTextStyle
+
         docs_svc.documents().batchUpdate(
-            documentId=doc_id, body={"requests": reqs}
+            documentId=doc_id, body={"requests": insert_req}
         ).execute()
+
+        chunk_size = 300
+        for i in range(0, len(style_reqs), chunk_size):
+            chunk = style_reqs[i : i + chunk_size]
+            docs_svc.documents().batchUpdate(
+                documentId=doc_id, body={"requests": chunk}
+            ).execute()
+
+        total_chunks = (len(style_reqs) + chunk_size - 1) // chunk_size
+        print(f"[gdocs] Отформатировано: {len(style_reqs)} запросов в {total_chunks} чанках")
 
         try:
             drive_svc.permissions().create(
