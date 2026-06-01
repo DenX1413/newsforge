@@ -670,16 +670,30 @@ export default function ReportDetail() {
   };
 
   const handlePdf = () => {
-    const html  = buildPrintHtml(report);
-    const blob  = new Blob([html], { type: "text/html;charset=utf-8" });
+    const html    = buildPrintHtml(report);
+    const blob    = new Blob([html], { type: "text/html;charset=utf-8" });
     const blobUrl = URL.createObjectURL(blob);
-    const w = window.open(blobUrl, "_blank");
-    // Release the object URL after the window has loaded it
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 15_000);
-    if (w) {
-      // Wait for page to render before triggering print dialog
-      w.addEventListener("load", () => setTimeout(() => w.print(), 300), { once: true });
-    }
+
+    // Hidden iframe — no popup, no popup-blocker issues
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none;";
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (_) {
+        // Fallback: open in new tab if iframe print is restricted
+        window.open(blobUrl, "_blank");
+      }
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        URL.revokeObjectURL(blobUrl);
+      }, 2000);
+    };
+
+    iframe.src = blobUrl;
   };
 
   const handleDocx = () => {
