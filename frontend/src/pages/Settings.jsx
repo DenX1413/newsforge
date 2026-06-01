@@ -40,6 +40,7 @@ function Field({ label, hint, children }) {
 }
 
 function TokenInput({ value, onChange, placeholder, configured }) {
+  const { t } = useLang();
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
@@ -47,7 +48,7 @@ function TokenInput({ value, onChange, placeholder, configured }) {
         type={show ? "text" : "password"}
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder={configured ? "••••••••••••••••••• (уже задан)" : placeholder}
+        placeholder={configured ? `••••••••••••••••••• (${t("already_set")})` : placeholder}
         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors pr-10"
       />
       <button
@@ -202,7 +203,7 @@ export default function SettingsPage() {
       setTimeout(() => setSaved(false), 3000);
       refetch();
     } catch (e) {
-      setSaveError("Ошибка сохранения: " + e.message);
+      setSaveError(t("save_error") + " " + e.message);
     } finally {
       setSaving(false);
     }
@@ -320,42 +321,25 @@ export default function SettingsPage() {
 
         <TestResult result={testResult} channel="telegram" t={t} />
 
-        <Collapsible label="📋 Как подключить Telegram — пошаговая инструкция">
-          <GuideStep num="1">
-            Открой Telegram и найди бота{" "}
-            <b className="text-gray-400">@BotFather</b> → напиши{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded">/newbot</code>
-          </GuideStep>
-          <GuideStep num="2">
-            Придумай имя бота (например, <b className="text-gray-400">NewsForge Notify</b>) и
-            username (например, <b className="text-gray-400">newsforge_notify_bot</b>)
-          </GuideStep>
-          <GuideStep num="3">
-            BotFather пришлёт <b className="text-gray-400">Bot Token</b> вида{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">1234567890:ABCdefGhi...</code>
-            → вставь его в поле ниже
-          </GuideStep>
-          <GuideStep num="4">
-            Напиши своему боту{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded">/start</code>
-            {" "}— это активирует чат
-          </GuideStep>
-          <GuideStep num="5">
-            Узнай свой Chat ID: напиши боту{" "}
-            <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer"
-               className="text-sky-400 underline inline-flex items-center gap-0.5">
-              @userinfobot <ExternalLink size={10} />
-            </a>
-            {" "}— он пришлёт твой ID → вставь в поле Chat ID
-          </GuideStep>
-          <GuideStep num="6">
-            Нажми <b className="text-gray-400">Сохранить</b> → затем <b className="text-gray-400">Тест</b> —
-            бот пришлёт тестовое сообщение
-          </GuideStep>
+        <Collapsible label={t("tg_guide_title")}>
+          {lang === "en" ? (<>
+            <GuideStep num="1">Open Telegram and find <b className="text-gray-400">@BotFather</b> → send <code className="text-amber-400 bg-gray-900 px-1 rounded">/newbot</code></GuideStep>
+            <GuideStep num="2">Choose a name (e.g. <b className="text-gray-400">NewsForge Notify</b>) and username (e.g. <b className="text-gray-400">newsforge_notify_bot</b>)</GuideStep>
+            <GuideStep num="3">BotFather will send a <b className="text-gray-400">Bot Token</b> like <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">1234567890:ABCdefGhi...</code> → paste it below</GuideStep>
+            <GuideStep num="4">Message your bot <code className="text-amber-400 bg-gray-900 px-1 rounded">/start</code> — this activates the chat</GuideStep>
+            <GuideStep num="5">Get your Chat ID: message <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">@userinfobot <ExternalLink size={10} /></a> — it will send your ID → paste it in the Chat ID field</GuideStep>
+            <GuideStep num="6">Click <b className="text-gray-400">Save</b> → then <b className="text-gray-400">Test</b> — the bot will send a test message</GuideStep>
+          </>) : (<>
+            <GuideStep num="1">Открой Telegram и найди бота <b className="text-gray-400">@BotFather</b> → напиши <code className="text-amber-400 bg-gray-900 px-1 rounded">/newbot</code></GuideStep>
+            <GuideStep num="2">Придумай имя бота (например, <b className="text-gray-400">NewsForge Notify</b>) и username (например, <b className="text-gray-400">newsforge_notify_bot</b>)</GuideStep>
+            <GuideStep num="3">BotFather пришлёт <b className="text-gray-400">Bot Token</b> вида <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">1234567890:ABCdefGhi...</code> → вставь его в поле ниже</GuideStep>
+            <GuideStep num="4">Напиши своему боту <code className="text-amber-400 bg-gray-900 px-1 rounded">/start</code> — это активирует чат</GuideStep>
+            <GuideStep num="5">Узнай свой Chat ID: напиши боту <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">@userinfobot <ExternalLink size={10} /></a> — он пришлёт твой ID → вставь в поле Chat ID</GuideStep>
+            <GuideStep num="6">Нажми <b className="text-gray-400">Сохранить</b> → затем <b className="text-gray-400">Тест</b> — бот пришлёт тестовое сообщение</GuideStep>
+          </>)}
         </Collapsible>
 
-        <Field label="Bot Token"
-               hint="Получи у @BotFather → /newbot. Оставь пустым, чтобы не менять.">
+        <Field label="Bot Token" hint={t("tg_token_hint")}>
           <TokenInput
             value={form.telegram_bot_token}
             onChange={v => set("telegram_bot_token", v)}
@@ -364,8 +348,7 @@ export default function SettingsPage() {
           />
         </Field>
 
-        <Field label="Chat ID"
-               hint="ID чата или пользователя. Напиши боту /start — получи ID через @userinfobot.">
+        <Field label="Chat ID" hint={t("tg_chatid_hint")}>
           <input
             type="text"
             value={form.telegram_chat_id}
@@ -398,43 +381,27 @@ export default function SettingsPage() {
 
         <TestResult result={testResult} channel="slack" t={t} />
 
-        <Collapsible label="📋 Как подключить Slack — пошаговая инструкция">
-          <GuideStep num="1">
-            Перейди на{" "}
-            <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer"
-               className="text-sky-400 underline inline-flex items-center gap-0.5">
-              api.slack.com/apps <ExternalLink size={10} />
-            </a>
-            {" "}→ <b className="text-gray-400">Create New App</b> → <b className="text-gray-400">From scratch</b>
-          </GuideStep>
-          <GuideStep num="2">
-            Введи название (<b className="text-gray-400">NewsForge</b>) и выбери свой Workspace
-          </GuideStep>
-          <GuideStep num="3">
-            В меню: <b className="text-gray-400">OAuth & Permissions</b> →
-            раздел <b className="text-gray-400">Bot Token Scopes</b> →
-            добавь <code className="text-amber-400 bg-gray-900 px-1 rounded">chat:write</code>
-          </GuideStep>
-          <GuideStep num="4">
-            Наверху страницы → <b className="text-gray-400">Install to Workspace</b> → <b className="text-gray-400">Allow</b>
-          </GuideStep>
-          <GuideStep num="5">
-            Скопируй <b className="text-gray-400">Bot User OAuth Token</b>{" "}
-            (начинается с <code className="text-amber-400 bg-gray-900 px-1 rounded">xoxb-</code>) → вставь ниже
-          </GuideStep>
-          <GuideStep num="6">
-            В нужном канале Slack напиши:{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded">/invite @NewsForge</code>
-            {" "}— иначе бот не сможет писать
-          </GuideStep>
-          <GuideStep num="7">
-            Channel ID: правый клик на канал → <b className="text-gray-400">Copy link</b> →
-            последняя часть URL (например, <code className="text-amber-400 bg-gray-900 px-1 rounded">C0123ABCDEF</code>)
-          </GuideStep>
+        <Collapsible label={t("slack_guide_title")}>
+          {lang === "en" ? (<>
+            <GuideStep num="1">Go to <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">api.slack.com/apps <ExternalLink size={10} /></a> → <b className="text-gray-400">Create New App</b> → <b className="text-gray-400">From scratch</b></GuideStep>
+            <GuideStep num="2">Enter a name (<b className="text-gray-400">NewsForge</b>) and select your Workspace</GuideStep>
+            <GuideStep num="3">In the menu: <b className="text-gray-400">OAuth & Permissions</b> → <b className="text-gray-400">Bot Token Scopes</b> → add <code className="text-amber-400 bg-gray-900 px-1 rounded">chat:write</code></GuideStep>
+            <GuideStep num="4">At the top of the page → <b className="text-gray-400">Install to Workspace</b> → <b className="text-gray-400">Allow</b></GuideStep>
+            <GuideStep num="5">Copy the <b className="text-gray-400">Bot User OAuth Token</b> (starts with <code className="text-amber-400 bg-gray-900 px-1 rounded">xoxb-</code>) → paste below</GuideStep>
+            <GuideStep num="6">In the target Slack channel type: <code className="text-amber-400 bg-gray-900 px-1 rounded">/invite @NewsForge</code> — otherwise the bot can't post</GuideStep>
+            <GuideStep num="7">Channel ID: right-click the channel → <b className="text-gray-400">Copy link</b> → last part of the URL (e.g. <code className="text-amber-400 bg-gray-900 px-1 rounded">C0123ABCDEF</code>)</GuideStep>
+          </>) : (<>
+            <GuideStep num="1">Перейди на <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">api.slack.com/apps <ExternalLink size={10} /></a> → <b className="text-gray-400">Create New App</b> → <b className="text-gray-400">From scratch</b></GuideStep>
+            <GuideStep num="2">Введи название (<b className="text-gray-400">NewsForge</b>) и выбери свой Workspace</GuideStep>
+            <GuideStep num="3">В меню: <b className="text-gray-400">OAuth & Permissions</b> → раздел <b className="text-gray-400">Bot Token Scopes</b> → добавь <code className="text-amber-400 bg-gray-900 px-1 rounded">chat:write</code></GuideStep>
+            <GuideStep num="4">Наверху страницы → <b className="text-gray-400">Install to Workspace</b> → <b className="text-gray-400">Allow</b></GuideStep>
+            <GuideStep num="5">Скопируй <b className="text-gray-400">Bot User OAuth Token</b> (начинается с <code className="text-amber-400 bg-gray-900 px-1 rounded">xoxb-</code>) → вставь ниже</GuideStep>
+            <GuideStep num="6">В нужном канале Slack напиши: <code className="text-amber-400 bg-gray-900 px-1 rounded">/invite @NewsForge</code> — иначе бот не сможет писать</GuideStep>
+            <GuideStep num="7">Channel ID: правый клик на канал → <b className="text-gray-400">Copy link</b> → последняя часть URL (например, <code className="text-amber-400 bg-gray-900 px-1 rounded">C0123ABCDEF</code>)</GuideStep>
+          </>)}
         </Collapsible>
 
-        <Field label="Bot OAuth Token"
-               hint="Slack App → OAuth & Permissions → Bot User OAuth Token. Оставь пустым, чтобы не менять.">
+        <Field label="Bot OAuth Token" hint={t("slack_token_hint")}>
           <TokenInput
             value={form.slack_bot_token}
             onChange={v => set("slack_bot_token", v)}
@@ -443,8 +410,7 @@ export default function SettingsPage() {
           />
         </Field>
 
-        <Field label="Channel ID"
-               hint="Правой кнопкой на канал → Copy link → последняя часть URL.">
+        <Field label="Channel ID" hint={t("slack_channel_hint")}>
           <input
             type="text"
             value={form.slack_channel_id}
@@ -457,17 +423,14 @@ export default function SettingsPage() {
 
       {/* ── Telegram каналы ── */}
       <Section title={t("tg_channels")} icon={Bell} badge={t("active")}>
-        <p className="text-xs text-gray-500">
-          Автоматически читает публичные Telegram-каналы через RSS — без ключей и авторизации.
-          Укажи каналы для нужных GEO или оставь пустым для дефолтных.
-        </p>
+        <p className="text-xs text-gray-500">{t("tg_channels_desc")}</p>
         <div className="text-xs text-emerald-400 flex items-center gap-1.5">
           <CheckCircle size={12} /> {t("works_without_setup")}
         </div>
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-400">
             {t("channels_by_geo")}{" "}
-            <span className="text-gray-600 font-normal">(через запятую, без @)</span>
+            <span className="text-gray-600 font-normal">{t("comma_no_at")}</span>
           </p>
           {[
             ["RU", "telegram_channels_ru", "novosti_russia360, ria_novosti_russya, rossia_now"],
@@ -482,7 +445,7 @@ export default function SettingsPage() {
               <span className="text-xs font-bold text-gray-400 w-8 shrink-0">{geo}</span>
               <input type="text" value={form[key]}
                 onChange={e => set(key, e.target.value)}
-                placeholder={`По умолчанию: ${ph}`}
+                placeholder={`${t("default_prefix")} ${ph}`}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors" />
             </div>
           ))}
@@ -505,14 +468,11 @@ export default function SettingsPage() {
             <StatusDot ok={settings?.gdocs_folder_configured} label={t("drive_folder")} />
           </div>
           {settings?.gdocs_oauth_configured && settings?.gdocs_folder_configured && (
-            <p className="text-xs text-emerald-400">
-              ✓ OAuth подключён — документы создаются от имени вашего аккаунта
-            </p>
+            <p className="text-xs text-emerald-400">{t("oauth_connected")}</p>
           )}
           {!settings?.gdocs_oauth_configured && settings?.gdocs_configured && settings?.gdocs_folder_configured && (
             <div className="text-xs text-amber-400 bg-amber-950/20 border border-amber-800/30 rounded-lg px-3 py-2">
-              ⚠ Service Account не может создавать файлы в личном Drive (квота = 0 байт).
-              Добавь OAuth токен ниже для полноценной работы.
+              {t("sa_warning")}
             </div>
           )}
         </div>
@@ -520,44 +480,35 @@ export default function SettingsPage() {
         {/* SA email */}
         {settings?.gdocs_configured && settings?.sa_email && (
           <div className="bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2.5 space-y-1">
-            <p className="text-[11px] text-gray-500">Email сервисного аккаунта (добавь как Editor в папку Drive):</p>
+            <p className="text-[11px] text-gray-500">{t("sa_email_label")}</p>
             <p className="text-xs font-mono text-amber-300 select-all break-all">{settings.sa_email}</p>
           </div>
         )}
 
-        {/* ── OAuth section (recommended for personal Gmail) ── */}
-        <Collapsible label="🔑 OAuth2 (рекомендуется для личного Gmail) — пошаговая инструкция">
+        {/* ── OAuth section ── */}
+        <Collapsible label={t("oauth_guide_title")}>
           <div className="text-[11px] text-amber-400/80 bg-amber-950/20 border border-amber-800/30 rounded px-2 py-1.5 mb-1">
-            Используй OAuth если у тебя личный Gmail-аккаунт. Service Account не имеет своего Drive-пространства.
+            {lang === "en"
+              ? "Use OAuth if you have a personal Gmail account. Service Account has no Drive storage quota."
+              : "Используй OAuth если у тебя личный Gmail-аккаунт. Service Account не имеет своего Drive-пространства."}
           </div>
-          <GuideStep num="1">
-            <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer"
-               className="text-sky-400 underline inline-flex items-center gap-0.5">
-              GCP Console → Credentials <ExternalLink size={10} />
-            </a>
-            {" "}→ <b className="text-gray-400">Create Credentials → OAuth 2.0 Client ID</b>
-          </GuideStep>
-          <GuideStep num="2">
-            Тип: <b className="text-gray-400">Desktop App</b> → скопируй{" "}
-            <b className="text-gray-400">Client ID</b> и <b className="text-gray-400">Client Secret</b>
-          </GuideStep>
-          <GuideStep num="3">
-            Убедись что добавлены scopes:{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">drive</code>{" "}и{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">documents</code>
-          </GuideStep>
-          <GuideStep num="4">
-            Запусти скрипт авторизации:{" "}
-            <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">python setup_google_oauth.py</code>
-            {" "}— он откроет браузер и вернёт refresh_token
-          </GuideStep>
-          <GuideStep num="5">
-            Вставь Client ID, Client Secret и Refresh Token в поля ниже → Сохранить
-          </GuideStep>
+          {lang === "en" ? (<>
+            <GuideStep num="1"><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">GCP Console → Credentials <ExternalLink size={10} /></a> → <b className="text-gray-400">Create Credentials → OAuth 2.0 Client ID</b></GuideStep>
+            <GuideStep num="2">Type: <b className="text-gray-400">Desktop App</b> → copy <b className="text-gray-400">Client ID</b> and <b className="text-gray-400">Client Secret</b></GuideStep>
+            <GuideStep num="3">Make sure scopes are added: <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">drive</code> and <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">documents</code></GuideStep>
+            <GuideStep num="4">Run the auth script: <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">python setup_google_oauth.py</code> — it will open a browser and return a refresh_token</GuideStep>
+            <GuideStep num="5">Paste Client ID, Client Secret and Refresh Token into the fields below → Save</GuideStep>
+          </>) : (<>
+            <GuideStep num="1"><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">GCP Console → Credentials <ExternalLink size={10} /></a> → <b className="text-gray-400">Create Credentials → OAuth 2.0 Client ID</b></GuideStep>
+            <GuideStep num="2">Тип: <b className="text-gray-400">Desktop App</b> → скопируй <b className="text-gray-400">Client ID</b> и <b className="text-gray-400">Client Secret</b></GuideStep>
+            <GuideStep num="3">Убедись что добавлены scopes: <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">drive</code> и <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">documents</code></GuideStep>
+            <GuideStep num="4">Запусти скрипт авторизации: <code className="text-amber-400 bg-gray-900 px-1 rounded text-[10px]">python setup_google_oauth.py</code> — он откроет браузер и вернёт refresh_token</GuideStep>
+            <GuideStep num="5">Вставь Client ID, Client Secret и Refresh Token в поля ниже → Сохранить</GuideStep>
+          </>)}
         </Collapsible>
 
         <Field label="OAuth Client ID"
-               hint={settings?.gdocs_oauth_configured ? "OAuth уже настроен. Оставь пустым чтобы не менять." : "Из GCP Console → Credentials → OAuth 2.0 Client ID"}>
+               hint={settings?.gdocs_oauth_configured ? t("oauth_client_id_hint") : t("oauth_not_set_hint")}>
           <TokenInput
             value={form.google_oauth_client_id}
             onChange={v => set("google_oauth_client_id", v)}
@@ -566,8 +517,7 @@ export default function SettingsPage() {
           />
         </Field>
 
-        <Field label="OAuth Client Secret"
-               hint="Из GCP Console → OAuth 2.0 Client ID → Client Secret">
+        <Field label="OAuth Client Secret" hint={t("oauth_secret_hint")}>
           <TokenInput
             value={form.google_oauth_client_secret}
             onChange={v => set("google_oauth_client_secret", v)}
@@ -576,8 +526,7 @@ export default function SettingsPage() {
           />
         </Field>
 
-        <Field label="OAuth Refresh Token"
-               hint="Получи запустив: python setup_google_oauth.py">
+        <Field label="OAuth Refresh Token" hint={t("oauth_refresh_hint")}>
           <TokenInput
             value={form.google_oauth_refresh_token}
             onChange={v => set("google_oauth_refresh_token", v)}
@@ -586,32 +535,27 @@ export default function SettingsPage() {
           />
         </Field>
 
-        {/* ── Service Account (legacy / alternative) ── */}
-        <Collapsible label="⚙ Service Account (альтернатива / Google Workspace)">
+        {/* ── Service Account ── */}
+        <Collapsible label={t("sa_guide_title")}>
           <div className="space-y-3">
-            <GuideStep num="1">
-              <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer"
-                 className="text-sky-400 underline inline-flex items-center gap-0.5">
-                Google Cloud Console <ExternalLink size={10} />
-              </a>
-              {" "}→ включи <b className="text-gray-400">Google Docs API</b> и <b className="text-gray-400">Google Drive API</b>
-            </GuideStep>
-            <GuideStep num="2">
-              <b className="text-gray-400">Credentials → Create Credentials → Service Account</b> →
-              скачай JSON-ключ → вставь содержимое ниже
-            </GuideStep>
-            <GuideStep num="3">
-              Поделись папкой Drive с email сервисного аккаунта (роль Editor)
-            </GuideStep>
+            {lang === "en" ? (<>
+              <GuideStep num="1"><a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink size={10} /></a> → enable <b className="text-gray-400">Google Docs API</b> and <b className="text-gray-400">Google Drive API</b></GuideStep>
+              <GuideStep num="2"><b className="text-gray-400">Credentials → Create Credentials → Service Account</b> → download the JSON key → paste its contents below</GuideStep>
+              <GuideStep num="3">Share your Drive folder with the service account email (Editor role)</GuideStep>
+            </>) : (<>
+              <GuideStep num="1"><a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink size={10} /></a> → включи <b className="text-gray-400">Google Docs API</b> и <b className="text-gray-400">Google Drive API</b></GuideStep>
+              <GuideStep num="2"><b className="text-gray-400">Credentials → Create Credentials → Service Account</b> → скачай JSON-ключ → вставь содержимое ниже</GuideStep>
+              <GuideStep num="3">Поделись папкой Drive с email сервисного аккаунта (роль Editor)</GuideStep>
+            </>)}
 
             <Field label="Service Account JSON"
-                   hint={settings?.gdocs_configured ? "Ключ уже настроен. Вставь новый JSON только если хочешь заменить." : "Открой скачанный JSON-файл, выдели всё (Ctrl+A) и вставь сюда."}>
+                   hint={settings?.gdocs_configured ? t("sa_json_set_hint") : t("sa_json_empty_hint")}>
               <textarea
                 rows={3}
                 value={form.google_credentials_json}
                 onChange={e => set("google_credentials_json", e.target.value)}
                 placeholder={settings?.gdocs_configured
-                  ? '{ "type": "service_account", ... }  ← уже настроен, оставь пустым'
+                  ? `{ "type": "service_account", ... }  ← ${t("sa_leave_empty")}`
                   : '{ "type": "service_account", "project_id": "...", "private_key": "-----BEGIN RSA...", ... }'}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors font-mono resize-none"
               />
@@ -619,8 +563,7 @@ export default function SettingsPage() {
           </div>
         </Collapsible>
 
-        <Field label="ID папки в Google Drive"
-               hint="Последняя часть URL открытой папки: drive.google.com/drive/folders/ВОТ_ЭТО">
+        <Field label={t("folder_id")} hint={t("drive_folder_hint")}>
           <input
             type="text"
             value={form.google_drive_folder_id}
@@ -633,8 +576,7 @@ export default function SettingsPage() {
 
       {/* ── Pipeline ── */}
       <Section title={t("pipeline_section")} icon={Globe}>
-        <Field label="URL приложения"
-               hint="Используется в ссылках Telegram/Slack уведомлений. При деплое замени на реальный домен.">
+        <Field label={t("app_url_label")} hint={t("app_url_hint")}>
           <div className="relative">
             <Link size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
             <input
@@ -647,8 +589,7 @@ export default function SettingsPage() {
           </div>
         </Field>
 
-        <Field label="Период покрытия новостей"
-               hint="Статьи старше этого срока игнорируются. Рекомендовано: 5–7 дней.">
+        <Field label={t("coverage_days")} hint={t("coverage_hint")}>
           <div className="space-y-3">
             {/* Presets */}
             <div className="grid grid-cols-5 gap-1.5">
@@ -698,8 +639,7 @@ export default function SettingsPage() {
           </div>
         </Field>
 
-        <Field label="GEO по умолчанию"
-               hint="Используются для автозапуска по расписанию.">
+        <Field label={t("default_geos")} hint={t("default_geos_hint")}>
           <div className="flex gap-2 flex-wrap">
             {GEOS_ALL.map(g => (
               <button
