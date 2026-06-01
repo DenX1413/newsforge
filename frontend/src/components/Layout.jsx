@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Zap, FileText, Lightbulb, Type, ThumbsUp, Settings } from "lucide-react";
 import { useStats } from "../hooks/useApi.js";
+import { useLang } from "../hooks/useLang.js";
 
 function StatPill({ icon: Icon, value, label, color }) {
   if (value == null) return null;
@@ -16,6 +17,7 @@ function StatPill({ icon: Icon, value, label, color }) {
 export default function Layout() {
   const stats    = useStats();
   const location = useLocation();
+  const { t }    = useLang();
   const onSettings = location.pathname === "/settings";
 
   return (
@@ -37,10 +39,10 @@ export default function Layout() {
 
           {/* Live stats */}
           <div className="flex items-center gap-4 flex-1">
-            <StatPill icon={FileText}  value={stats?.total_reports}   label="отчётов"    color="text-sky-400" />
-            <StatPill icon={Lightbulb} value={stats?.total_angles}    label="углов"      color="text-violet-400" />
-            <StatPill icon={Type}      value={stats?.total_headlines} label="заголовков" color="text-emerald-400" />
-            <StatPill icon={ThumbsUp}  value={stats?.liked_angles}    label="лайков"     color="text-amber-400" />
+            <StatPill icon={FileText}  value={stats?.total_reports}   label={t("reports_count")}   color="text-sky-400" />
+            <StatPill icon={Lightbulb} value={stats?.total_angles}    label={t("angles_count")}    color="text-violet-400" />
+            <StatPill icon={Type}      value={stats?.total_headlines} label={t("headlines_count")} color="text-emerald-400" />
+            <StatPill icon={ThumbsUp}  value={stats?.liked_angles}    label={t("likes_count")}     color="text-amber-400" />
           </div>
 
           {/* Model badge */}

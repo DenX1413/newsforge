@@ -4,11 +4,12 @@ import {
   Settings, Bell, Globe, Eye, EyeOff, CheckCircle,
   XCircle, Send, Save, RotateCw, AlertCircle, Link,
   FileText, ChevronDown, ChevronRight, ExternalLink, ArrowLeft,
-  Sun, Moon, Monitor,
+  Sun, Moon, Monitor, Languages,
 } from "lucide-react";
 import { useSettings, saveSettings, testNotify } from "../hooks/useApi.js";
 import { GeoFlag } from "../components/ReportCard.jsx";
 import { useTheme } from "../hooks/useTheme.js";
+import { useLang } from "../hooks/useLang.js";
 
 const GEOS_ALL = ["RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"];
 
@@ -118,6 +119,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { settings, loading, refetch } = useSettings();
   const { theme, setTheme } = useTheme();
+  const { lang, setLang, t } = useLang();
 
   const [form, setForm] = useState({
     telegram_bot_token:          "",
@@ -236,32 +238,63 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* ── Тема ── */}
-      <div className="card space-y-3">
-        <h2 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-          <Sun size={15} className="text-amber-400" /> Тема оформления
-        </h2>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { value: "system", icon: Monitor, label: "Системная", hint: "Как в ОС" },
-            { value: "light",  icon: Sun,     label: "Светлая",   hint: "Молочная" },
-            { value: "dark",   icon: Moon,    label: "Тёмная",    hint: "По умолчанию" },
-          ].map(({ value, icon: Icon, label, hint }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setTheme(value)}
-              className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-medium transition-all ${
-                theme === value
-                  ? "border-sky-500 bg-sky-500/15 text-sky-300"
-                  : "border-gray-700 text-gray-500 hover:border-sky-500/50 hover:text-sky-400"
-              }`}
-            >
-              <Icon size={18} className={theme === value ? "text-sky-400" : "text-gray-500"} />
-              <span className="font-semibold">{label}</span>
-              <span className="text-[10px] font-normal text-gray-600">{hint}</span>
-            </button>
-          ))}
+      {/* ── Тема + Язык (рядом) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        {/* Тема */}
+        <div className="card space-y-3">
+          <h2 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+            <Sun size={15} className="text-amber-400" /> {t("theme_section")}
+          </h2>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { value: "system", icon: Monitor, labelKey: "theme_system", hintKey: "theme_system_hint" },
+              { value: "light",  icon: Sun,     labelKey: "theme_light",  hintKey: "theme_light_hint" },
+              { value: "dark",   icon: Moon,    labelKey: "theme_dark",   hintKey: "theme_dark_hint" },
+            ].map(({ value, icon: Icon, labelKey, hintKey }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-medium transition-all ${
+                  theme === value
+                    ? "border-sky-500 bg-sky-500/15 text-sky-300"
+                    : "border-gray-700 text-gray-500 hover:border-sky-500/50 hover:text-sky-400"
+                }`}
+              >
+                <Icon size={18} className={theme === value ? "text-sky-400" : "text-gray-500"} />
+                <span className="font-semibold">{t(labelKey)}</span>
+                <span className="text-[10px] font-normal text-gray-600">{t(hintKey)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Язык */}
+        <div className="card space-y-3">
+          <h2 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+            <Globe size={15} className="text-sky-400" /> {t("lang_section")}
+          </h2>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: "ru", flag: "🇷🇺", label: "Русский" },
+              { value: "en", flag: "🇬🇧", label: "English" },
+            ].map(({ value, flag, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setLang(value)}
+                className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-medium transition-all ${
+                  lang === value
+                    ? "border-sky-500 bg-sky-500/15 text-sky-300"
+                    : "border-gray-700 text-gray-500 hover:border-sky-500/50 hover:text-sky-400"
+                }`}
+              >
+                <span className="text-2xl">{flag}</span>
+                <span className="font-semibold">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

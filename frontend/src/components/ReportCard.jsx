@@ -5,12 +5,13 @@ import {
   AlertCircle, Loader2, Trash2, Pencil, Check, X,
 } from "lucide-react";
 import { deleteReport, toggleFavorite, updateReportTitle } from "../hooks/useApi.js";
+import { useLang } from "../hooks/useLang.js";
 
-const STATUS = {
-  done:    { label: "готово",      cls: "bg-emerald-500/15 text-emerald-400" },
-  running: { label: "выполняется", cls: "bg-sky-500/15 text-sky-400" },
-  error:   { label: "ошибка",      cls: "bg-red-500/15 text-red-400" },
-  pending: { label: "в очереди",   cls: "bg-gray-500/15 text-gray-400" },
+const STATUS_CLS = {
+  done:    "bg-emerald-500/15 text-emerald-400",
+  running: "bg-sky-500/15 text-sky-400",
+  error:   "bg-red-500/15 text-red-400",
+  pending: "bg-gray-500/15 text-gray-400",
 };
 
 const GEO_CC = { RU: "ru", UA: "ua", BY: "by", KZ: "kz", DE: "de", PL: "pl", IN: "in", BR: "br", MX: "mx" };
@@ -132,8 +133,10 @@ function TitleEditor({ reportId, initialTitle, onSaved }) {
 /* ── Card ──────────────────────────────────────────────────────────── */
 export default function ReportCard({ report, onDelete, onFavoriteToggle }) {
   const navigate = useNavigate();
+  const { t } = useLang();
   const clickable = report.status === "done";
-  const st = STATUS[report.status] ?? STATUS.pending;
+  const stCls = STATUS_CLS[report.status] ?? STATUS_CLS.pending;
+  const stLabel = t(`status_${report.status}`) ?? report.status;
 
   const [confirm,    setConfirm]    = useState(false);
   const [deleting,   setDeleting]   = useState(false);
@@ -182,10 +185,10 @@ export default function ReportCard({ report, onDelete, onFavoriteToggle }) {
 
           {/* Status / time / teamlead */}
           <div className="flex items-center gap-2 mt-0.5">
-            <span className={`badge text-[11px] py-0.5 ${st.cls}`}>
+            <span className={`badge text-[11px] py-0.5 ${stCls}`}>
               {report.status === "running" && <Loader2 size={10} className="animate-spin" />}
               {report.status === "error"   && <AlertCircle size={10} />}
-              {st.label}
+              {stLabel}
             </span>
             <span className="text-xs text-gray-600 flex items-center gap-1">
               <Clock size={10} /> {fmt(report.created_at)}
