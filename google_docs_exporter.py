@@ -1,20 +1,13 @@
 """
-NewsForge → Google Docs exporter — v2 (styled).
+NewsForge → Google Docs exporter — v3 (card-style, matching HTML template).
 
-Создаёт структурированный, визуально оформленный документ:
-  Обложка · Блок 1. Инфоповоды · Блок 2+3. Углы и заголовки ·
-  Блок 4. Рекомендации · Блок 5. Риски · Блок 6. Срочность ·
-  + Обратная связь по прошлому выпуску
-
-Setup (одноразово):
-  1. Google Drive → создай папку «NewsForge Reports»
-  2. ПКМ → Share → добавь email сервисного аккаунта как Editor
-  3. Скопируй ID папки из URL (drive.google.com/drive/folders/FOLDER_ID)
-  4. Settings → Google Docs → вставь ID папки → Сохранить
-
-Auth:
-  GOOGLE_CREDENTIALS_B64 — base64-encoded service account JSON (приоритет)
-  GOOGLE_SERVICE_ACCOUNT_PATH — путь к JSON-файлу (legacy)
+Воспроизводит визуальный стиль newsforge_template.html через
+borderLeft + shading Google Docs API:
+  • Цветная левая полоска срочности (как .acc-urgent / .acc-week / .acc-ever)
+  • Тонированный фон карточки (как .tag-urgent bg / .tag-week bg / .tag-ever bg)
+  • Цветные бейджи приоритета A/B/C  (как .grade-a / .grade-b)
+  • Цветные бейджи рисков high/mid/low (как .rl-high / .rl-mid / .rl-low)
+  • Топ-5 с пронумерованными карточками
 """
 import os, re, base64, json
 from datetime import datetime
@@ -32,35 +25,64 @@ TRIGGER_RU   = {"money": "Деньги", "crisis": "Кризис", "opportunity"
 CATEGORY_RU  = {"economy": "Экономика", "politics": "Политика", "social_media": "Соцсети",
                 "celebrity": "Селеба", "scandal": "Скандал", "banks_taxes": "Банки/Налоги",
                 "fears": "Страхи"}
-SOURCE_RU    = {"top_media": "Топ СМИ", "local_tabloid": "Таблоид", "google_news": "Google News",
-                "twitter_trend": "Twitter", "tiktok": "TikTok", "telegram": "Telegram",
-                "forum": "Форум"}
+SOURCE_RU    = {"top_media": "Топ СМИ", "local_tabloid": "Таблоид",
+                "google_news": "Google News", "twitter_trend": "Twitter",
+                "tiktok": "TikTok", "telegram": "Telegram", "forum": "Форум"}
 CREATIVE_RU  = {"news": "Новостной", "emotional": "Эмоциональный",
                 "investigation": "Разоблачение", "personal_story": "Личная история"}
-RISK_RU      = {"high": "Высокий", "medium": "Средний", "low": "Низкий"}
 FORMAT_RU    = {"question": "Вопрос", "shock": "Шок", "number": "Число",
                 "quote": "Цитата", "intrigue": "Интрига"}
-URGENCY_LABEL = {"urgent_48h": "СРОЧНО (48ч)", "week": "На неделе", "eternal": "Вечная тема"}
+RISK_RU      = {"high": "Высокий", "medium": "Средний", "low": "Низкий"}
+URGENCY_LABEL = {"urgent_48h": "Срочно · 48ч", "week": "На неделе", "eternal": "Вечная тема"}
 
-# ── Цветовая палитра ──────────────────────────────────────────────────────────
+# ── Цветовая палитра (точно как в HTML-шаблоне) ───────────────────────────────
 
 def _rgb(r, g, b):
     return {"red": r / 255, "green": g / 255, "blue": b / 255}
 
-C_NAVY   = _rgb(15,  52,  96)   # заголовки разделов
-C_TEAL   = _rgb(8,  102, 107)   # мета-информация, теги
-C_GREEN  = _rgb(21, 128,  61)   # приоритет A
-C_AMBER  = _rgb(180, 130,   0)  # приоритет B
-C_GRAY   = _rgb(100, 116, 139)  # приоритет C, второстепенный текст
-C_RED    = _rgb(185,  28,  28)  # СРОЧНО, высокий риск
-C_ORANGE = _rgb(194,  65,  12)  # на неделе, средний риск
-C_BLUE   = _rgb(30,   64, 175)  # ссылки
-C_GOLD   = _rgb(161,  98,   7)  # рекомендации
-C_TEXT   = _rgb(30,   41,  59)  # основной текст
-C_LIGHT  = _rgb(71,   85, 105)  # вторичный текст
+# Акцентные цвета полоски (left border)
+C_URGENT_ACC = _rgb(226, 75,  74)   # #E24B4A
+C_WEEK_ACC   = _rgb(239, 159, 39)   # #EF9F27
+C_EVER_ACC   = _rgb(29,  158, 117)  # #1D9E75
+
+# Фоны карточек (shading)
+C_URGENT_BG  = _rgb(252, 235, 235)  # #FCEBEB
+C_WEEK_BG    = _rgb(254, 243, 226)  # #FEF3E2
+C_EVER_BG    = _rgb(228, 247, 238)  # #E4F7EE
+C_WHITE_BG   = _rgb(255, 255, 255)
+C_CARD_BG    = _rgb(249, 249, 247)  # #F9F9F7  (body background)
+C_GRAY_BG    = _rgb(246, 246, 244)  # #F6F6F4  (top-num background)
+
+# Текстовые цвета тегов (совпадают с HTML)
+C_URGENT_TXT = _rgb(163, 45,  45)   # #A32D2D
+C_WEEK_TXT   = _rgb(133, 79,  11)   # #854F0B
+C_EVER_TXT   = _rgb(15,  110, 86)   # #0F6E56
+
+# Приоритеты
+C_GRADE_A    = _rgb(15,  110, 86)   # grade-a text
+C_GRADE_B    = _rgb(133, 79,  11)   # grade-b text
+C_GRADE_C    = _rgb(100, 100, 100)
+
+# Риски
+C_RISK_H_TXT = _rgb(163, 45,  45)   # rl-high text
+C_RISK_M_TXT = _rgb(133, 79,  11)   # rl-mid text
+C_RISK_L_TXT = _rgb(59,  109, 17)   # rl-low text
+C_RISK_H_BG  = _rgb(252, 235, 235)  # rl-high bg
+C_RISK_M_BG  = _rgb(254, 243, 226)  # rl-mid bg
+C_RISK_L_BG  = _rgb(234, 247, 238)  # rl-low bg
+
+# Служебные
+C_NAVY       = _rgb(15,  52,  96)
+C_GRAY_TXT   = _rgb(100, 100, 100)
+C_LIGHT_TXT  = _rgb(153, 153, 153)  # #999
+C_BODY_TXT   = _rgb(26,  26,  26)   # #1a1a1a
+C_BLUE_TXT   = _rgb(37,  99,  235)
+C_GOLD_TXT   = _rgb(161, 98,  7)
+C_DIVIDER    = _rgb(235, 235, 235)  # #ebebeb
+C_INNER_DIV  = _rgb(240, 240, 238)  # #f0f0ee
 
 
-# ── UTF-16 helper (Google Docs API считает в code units) ──────────────────────
+# ── UTF-16 helper ─────────────────────────────────────────────────────────────
 
 def _u16(text: str) -> int:
     return len(text.encode("utf-16-le")) // 2
@@ -69,36 +91,58 @@ def _u16(text: str) -> int:
 # ── Утилиты текста ────────────────────────────────────────────────────────────
 
 def _clean(text: str) -> str:
-    """Убирает HTML-сущности и лишние пробелы из RSS-текста."""
     if not text:
         return ""
-    text = re.sub(r"&nbsp;", " ", text)
-    text = re.sub(r"&amp;", "&", text)
-    text = re.sub(r"&lt;", "<", text)
-    text = re.sub(r"&gt;", ">", text)
-    text = re.sub(r"&quot;", '"', text)
-    text = re.sub(r"&#\d+;", "", text)
+    text = re.sub(r"&nbsp;",  " ", text)
+    text = re.sub(r"&amp;",   "&", text)
+    text = re.sub(r"&lt;",    "<", text)
+    text = re.sub(r"&gt;",    ">", text)
+    text = re.sub(r"&quot;",  '"', text)
+    text = re.sub(r"&#\d+;",  "",  text)
     text = re.sub(r"[ \t]{2,}", " ", text)
     return text.strip()
 
 
 def _short_url(url: str, max_len: int = 72) -> str:
-    """Обрезает очень длинные URL до читаемой длины."""
-    if not url:
-        return ""
-    if len(url) <= max_len:
+    if not url or len(url) <= max_len:
         return url
-    # Для Google News redirect — оставляем только домен
     if "news.google.com" in url:
-        return "https://news.google.com/…"
-    return url[:max_len] + "…"
+        return "news.google.com/…"
+    try:
+        from urllib.parse import urlparse
+        p = urlparse(url)
+        short = p.netloc + p.path[:40]
+        return short + "…"
+    except Exception:
+        return url[:max_len] + "…"
+
+
+def _fmt_date(iso: str) -> str:
+    if not iso:
+        return ""
+    try:
+        d = datetime.fromisoformat(iso[:19])
+        months = ["янв","фев","мар","апр","май","июн",
+                  "июл","авг","сен","окт","ноя","дек"]
+        return f"{d.day} {months[d.month-1]} {d.year}"
+    except Exception:
+        return iso[:10]
+
+
+# ── Border helpers ────────────────────────────────────────────────────────────
+
+def _bspec(rgb: dict, width_pt: float = 1.0, pad_pt: float = 5.0) -> dict:
+    return {
+        "color":     {"color": {"rgbColor": rgb}},
+        "width":     {"magnitude": width_pt, "unit": "PT"},
+        "padding":   {"magnitude": pad_pt,   "unit": "PT"},
+        "dashStyle": "SOLID",
+    }
 
 
 # ── DocBuilder ────────────────────────────────────────────────────────────────
 
 class DocBuilder:
-    """Накапливает текстовые сегменты, строит пакет запросов Docs API."""
-
     def __init__(self):
         self._segs: list[dict] = []
 
@@ -108,10 +152,15 @@ class DocBuilder:
              italic: bool = False,
              size_pt: float = None,
              color: dict = None,
-             align: str = None,        # "CENTER" | "LEFT" | "JUSTIFIED"
+             align: str = None,
              space_above: float = None,
              space_below: float = None,
-             indent: float = None):    # indentStart в PT
+             indent: float = None,
+             border_left:   dict = None,
+             border_top:    dict = None,
+             border_bottom: dict = None,
+             border_right:  dict = None,
+             bg: dict = None):
         if text is not None:
             self._segs.append(dict(
                 text=text + "\n",
@@ -119,168 +168,17 @@ class DocBuilder:
                 bold=bold, italic=italic,
                 size_pt=size_pt, color=color,
                 align=align,
-                space_above=space_above,
-                space_below=space_below,
+                space_above=space_above, space_below=space_below,
                 indent=indent,
+                border_left=border_left, border_top=border_top,
+                border_bottom=border_bottom, border_right=border_right,
+                bg=bg,
             ))
 
-    # ── Структурные элементы ──────────────────────────────────────────────────
-
-    def br(self):
-        self._add("", space_above=0, space_below=0)
-
-    def divider_thick(self):
-        self._add("━" * 58, color=C_NAVY, align="CENTER",
-                  size_pt=8, space_above=10, space_below=10)
-
-    def divider(self):
-        self._add("─" * 58, color=C_GRAY, align="CENTER",
-                  size_pt=8, space_above=6, space_below=6)
-
-    def section_header(self, label: str, count=None):
-        tail = f"  ({count})" if count is not None else ""
-        self._add(f"▌  {label.upper()}{tail}",
-                  bold=True, size_pt=13, color=C_NAVY,
-                  space_above=20, space_below=6)
-
-    # ── Обложка ───────────────────────────────────────────────────────────────
-
-    def cover_title(self, t: str):
-        self._add(t, bold=True, size_pt=24, color=C_NAVY,
-                  align="CENTER", space_above=14, space_below=4)
-
-    def cover_sub(self, t: str):
-        self._add(t, size_pt=11, color=C_LIGHT,
-                  align="CENTER", space_above=2, space_below=2)
-
-    def cover_stats(self, t: str):
-        self._add(t, bold=True, size_pt=12, color=C_TEAL,
-                  align="CENTER", space_above=8, space_below=8)
-
-    # ── Новости ───────────────────────────────────────────────────────────────
-
-    def news_title(self, number: int, text: str, urgency: str):
-        color = {"urgent_48h": C_RED, "week": C_ORANGE, "eternal": C_GRAY}.get(urgency, C_GRAY)
-        icon  = {"urgent_48h": "🔥", "week": "⏳", "eternal": "♾️"}.get(urgency, "•")
-        label = URGENCY_LABEL.get(urgency, "")
-        badge = f"[{label}]  " if label else ""
-        self._add(f"{icon}  {number}.  {badge}{text}",
-                  bold=True, size_pt=11, color=color,
-                  space_above=10, space_below=2)
-
-    def news_meta(self, t: str):
-        self._add(t, size_pt=9.5, color=C_GRAY, indent=14, space_above=1, space_below=1)
-
-    def news_tags(self, t: str):
-        self._add(t, size_pt=9.5, color=C_TEAL, indent=14, space_above=1, space_below=1)
-
-    def news_desc(self, t: str):
-        self._add(t, size_pt=10, italic=True, color=C_LIGHT, indent=14,
-                  space_above=1, space_below=1)
-
-    def news_link(self, url: str):
-        self._add(f"   🔗  {_short_url(url)}",
-                  size_pt=9, color=C_BLUE, italic=True, indent=14,
-                  space_above=1, space_below=1)
-
-    # ── Углы ──────────────────────────────────────────────────────────────────
-
-    def angle_header(self, priority: str, title: str):
-        color = {"A": C_GREEN, "B": C_AMBER, "C": C_GRAY}.get(priority, C_GRAY)
-        icon  = {"A": "🟢", "B": "🟡", "C": "⚪"}.get(priority, "•")
-        self._add(f"{icon}  [{priority}]  {title}",
-                  bold=True, size_pt=12, color=color,
-                  space_above=14, space_below=3)
-
-    def angle_detail(self, emoji: str, label: str, value: str):
-        self._add(f"   {emoji}  {label}:  {value}",
-                  size_pt=10, color=C_LIGHT, indent=14, space_above=1, space_below=1)
-
-    def headlines_label(self):
-        self._add("   📌  Заголовки:",
-                  size_pt=9.5, bold=True, color=C_GRAY, indent=14,
-                  space_above=5, space_below=1)
-
-    def headline_row(self, text: str, chars: int, fmt: str):
-        ann = f"{chars} зн. · {fmt}"
-        pad = max(1, 64 - len(text) - len(ann))
-        self._add(f"        ▸  {text}{' ' * pad}{ann}",
-                  size_pt=10.5, color=C_TEXT, indent=14, space_above=1, space_below=1)
-
-    # ── Рекомендации ──────────────────────────────────────────────────────────
-
-    def rec_header(self, rank, title: str):
-        self._add(f"★  {rank}.  {title}",
-                  bold=True, size_pt=12, color=C_GOLD,
-                  space_above=12, space_below=3)
-
-    def rec_detail(self, emoji: str, label: str, value: str):
-        self._add(f"   {emoji}  {label}:  {value}",
-                  size_pt=10, color=C_LIGHT, indent=14, space_above=1, space_below=2)
-
-    def rec_scores(self, freshness: str, trigger: str, offer: str):
-        parts = [p for p in [
-            f"Свежесть: {freshness}" if freshness else None,
-            f"Триггер: {trigger}"   if trigger   else None,
-            f"Оффер: {offer}"       if offer      else None,
-        ] if p]
-        if parts:
-            self._add("   " + "   ·   ".join(parts),
-                      size_pt=10, color=C_TEAL, indent=14, space_above=1, space_below=1)
-
-    # ── Риски ─────────────────────────────────────────────────────────────────
-
-    def risk_header(self, title: str):
-        self._add(f"⚠️   {title}",
-                  bold=True, size_pt=11, color=C_ORANGE,
-                  space_above=12, space_below=3)
-
-    def risk_legal(self, items: list):
-        self._add(f"   ⚖️   Юридические риски:  {';  '.join(items)}",
-                  size_pt=10, color=_rgb(127, 29, 29), indent=14,
-                  space_above=2, space_below=1)
-
-    def risk_row(self, ban: str, neg: str, rep: str):
-        _icon  = {"high": "🔴", "medium": "🟡", "low": "🟢"}
-        _label = {"high": "Высокий", "medium": "Средний", "low": "Низкий"}
-        parts = [
-            f"Бан: {_icon.get(ban,'')} {_label.get(ban, ban)}",
-            f"Негатив: {_icon.get(neg,'')} {_label.get(neg, neg)}",
-            f"Репутация: {_icon.get(rep,'')} {_label.get(rep, rep)}",
-        ]
-        self._add("   " + "   |   ".join(parts),
-                  size_pt=10, color=C_GRAY, indent=14, space_above=2, space_below=1)
-
-    def risk_expiry(self, date: str):
-        self._add(f"   📅  Актуально до: {date}",
-                  size_pt=10, italic=True, color=C_GRAY, indent=14,
-                  space_above=1, space_below=1)
-
-    # ── Срочность ─────────────────────────────────────────────────────────────
-
-    def urgency_group(self, icon: str, label: str, count: int, color: dict):
-        self._add(f"{icon}  {label}  ({count})",
-                  bold=True, size_pt=12, color=color,
-                  space_above=10, space_below=4)
-
-    def urgency_bullet(self, text: str):
-        self._add(f"   ▸  {text}",
-                  size_pt=10.5, color=C_TEXT, indent=14,
-                  space_above=1, space_below=1)
-
-    # ── Прошлый выпуск ────────────────────────────────────────────────────────
-
-    def prev_item(self, priority: str, title: str):
-        color = {"A": C_GREEN, "B": C_AMBER, "C": C_GRAY}.get(priority, C_GRAY)
-        icon  = {"A": "🟢", "B": "🟡", "C": "⚪"}.get(priority, "•")
-        self._add(f"   {icon}  [{priority}]  {title}",
-                  size_pt=10.5, color=color, indent=14,
-                  space_above=2, space_below=2)
-
-    # ── Сборка запросов ───────────────────────────────────────────────────────
+    def br(self, above: float = 0, below: float = 0):
+        self._add("", space_above=above, space_below=below)
 
     def build_requests(self) -> tuple[str, list[dict]]:
-        """Возвращает (full_text, list_of_api_requests)."""
         full_text = "".join(s["text"] for s in self._segs)
         reqs: list[dict] = [
             {"insertText": {"location": {"index": 1}, "text": full_text}}
@@ -290,7 +188,7 @@ class DocBuilder:
         for seg in self._segs:
             ln   = _u16(seg["text"])
             end  = pos + ln
-            cend = end - 1  # исключаем завершающий \n из text style
+            cend = end - 1   # exclude trailing \n
 
             # ── Paragraph style ───────────────────────────────────────────────
             ps: dict = {}
@@ -298,12 +196,10 @@ class DocBuilder:
 
             ns = seg.get("named_style", "NORMAL_TEXT")
             if ns and ns != "NORMAL_TEXT":
-                ps["namedStyleType"] = ns
-                pf.append("namedStyleType")
+                ps["namedStyleType"] = ns; pf.append("namedStyleType")
 
             if seg.get("align"):
-                ps["alignment"] = seg["align"]
-                pf.append("alignment")
+                ps["alignment"] = seg["align"]; pf.append("alignment")
 
             if seg.get("space_above") is not None:
                 ps["spaceAbove"] = {"magnitude": seg["space_above"], "unit": "PT"}
@@ -316,6 +212,19 @@ class DocBuilder:
             if seg.get("indent") is not None:
                 ps["indentStart"] = {"magnitude": seg["indent"], "unit": "PT"}
                 pf.append("indentStart")
+
+            for side in ("left", "top", "bottom", "right"):
+                spec = seg.get(f"border_{side}")
+                if spec:
+                    key = f"border{side.capitalize()}"
+                    ps[key] = spec
+                    pf.append(key)
+
+            if seg.get("bg"):
+                ps["shading"] = {
+                    "backgroundColor": {"color": {"rgbColor": seg["bg"]}}
+                }
+                pf.append("shading")
 
             if ps:
                 reqs.append({
@@ -332,17 +241,12 @@ class DocBuilder:
                 tf: list = []
 
                 if seg.get("bold"):
-                    ts["bold"] = True
-                    tf.append("bold")
-
+                    ts["bold"] = True; tf.append("bold")
                 if seg.get("italic"):
-                    ts["italic"] = True
-                    tf.append("italic")
-
+                    ts["italic"] = True; tf.append("italic")
                 if seg.get("size_pt") is not None:
                     ts["fontSize"] = {"magnitude": seg["size_pt"], "unit": "PT"}
                     tf.append("fontSize")
-
                 if seg.get("color"):
                     ts["foregroundColor"] = {"color": {"rgbColor": seg["color"]}}
                     tf.append("foregroundColor")
@@ -361,19 +265,9 @@ class DocBuilder:
         return full_text, reqs
 
 
-# ── Credentials ───────────────────────────────────────────────────────────────
+# ── Credentials (unchanged) ───────────────────────────────────────────────────
 
 def _load_credentials():
-    """
-    Порядок приоритета:
-      1. OAuth2 Refresh Token (личный аккаунт Google) — рекомендуется для личного Drive
-      2. Service Account (base64 из env)
-      3. Service Account (путь к JSON файлу)
-
-    Внимание: сервисный аккаунт создаёт файлы в своём Drive (квота = 0).
-    Используй OAuth Refresh Token чтобы файлы создавались от имени пользователя.
-    Запусти setup_google_oauth.py один раз для получения токена.
-    """
     try:
         from google.oauth2 import service_account
         from google.oauth2.credentials import Credentials
@@ -382,46 +276,40 @@ def _load_credentials():
         print("[gdocs] Установи: pip install google-api-python-client google-auth")
         return None
 
-    # ── Вариант 1: OAuth2 refresh token (личный аккаунт) ──────────────────────
-    refresh_token  = os.getenv("GOOGLE_OAUTH_REFRESH_TOKEN", "").strip()
-    client_id      = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
-    client_secret  = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
+    refresh_token = os.getenv("GOOGLE_OAUTH_REFRESH_TOKEN", "").strip()
+    client_id     = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+    client_secret = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
     if refresh_token and client_id and client_secret:
         try:
             creds = Credentials(
-                token=None,
-                refresh_token=refresh_token,
+                token=None, refresh_token=refresh_token,
                 token_uri="https://oauth2.googleapis.com/token",
-                client_id=client_id,
-                client_secret=client_secret,
-                scopes=SCOPES,
+                client_id=client_id, client_secret=client_secret, scopes=SCOPES,
             )
             creds.refresh(Request())
-            print("[gdocs] Авторизация через OAuth2 (личный аккаунт)")
+            print("[gdocs] OAuth2 (личный аккаунт)")
             return creds
         except Exception as e:
-            print(f"[gdocs] Ошибка OAuth2 credentials: {e}")
+            print(f"[gdocs] OAuth2 ошибка: {e}")
 
-    # ── Вариант 2: Service Account из env (base64) ─────────────────────────────
     b64 = os.getenv("GOOGLE_CREDENTIALS_B64", "").strip()
     if b64:
         try:
             info = json.loads(base64.b64decode(b64).decode("utf-8"))
             creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
-            print("[gdocs] Авторизация через Service Account (base64)")
+            print("[gdocs] Service Account (base64)")
             return creds
         except Exception as e:
-            print(f"[gdocs] Ошибка credentials из env: {e}")
+            print(f"[gdocs] SA ошибка: {e}")
 
-    # ── Вариант 3: Service Account из файла ────────────────────────────────────
     path = os.getenv("GOOGLE_SERVICE_ACCOUNT_PATH", "").strip()
     if path and os.path.exists(path):
         try:
             creds = service_account.Credentials.from_service_account_file(path, scopes=SCOPES)
-            print("[gdocs] Авторизация через Service Account (файл)")
+            print("[gdocs] Service Account (файл)")
             return creds
         except Exception as e:
-            print(f"[gdocs] Ошибка credentials из файла: {e}")
+            print(f"[gdocs] SA файл ошибка: {e}")
 
     print("[gdocs] Credentials не настроены")
     return None
@@ -442,7 +330,6 @@ def get_service_account_email() -> str:
 
 
 def is_oauth_configured() -> bool:
-    """True если настроены OAuth2-токены (личный аккаунт)."""
     return bool(
         os.getenv("GOOGLE_OAUTH_REFRESH_TOKEN", "").strip() and
         os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip() and
@@ -450,7 +337,7 @@ def is_oauth_configured() -> bool:
     )
 
 
-# ── Главная функция ───────────────────────────────────────────────────────────
+# ── Главная функция (unchanged) ───────────────────────────────────────────────
 
 def create_report_doc(report_data: dict) -> Optional[str]:
     creds = _load_credentials()
@@ -467,11 +354,11 @@ def create_report_doc(report_data: dict) -> Optional[str]:
         drive_svc = build("drive", "v3", credentials=creds)
         docs_svc  = build("docs",  "v1", credentials=creds)
 
-        geo        = report_data.get("geo", "GEO")
-        report_id  = report_data.get("report_id", "")
-        date_str   = (report_data.get("created_at") or "")[:10]
-        title_val  = report_data.get("title", "").strip()
-        doc_title  = title_val or f"NewsForge — {geo} #{report_id} — {date_str}"
+        geo       = report_data.get("geo", "GEO")
+        report_id = report_data.get("report_id", "")
+        date_str  = (report_data.get("created_at") or "")[:10]
+        title_val = report_data.get("title", "").strip()
+        doc_title = title_val or f"NewsForge — {geo} #{report_id} — {date_str}"
 
         doc = drive_svc.files().create(
             body={"name": doc_title,
@@ -484,7 +371,6 @@ def create_report_doc(report_data: dict) -> Optional[str]:
                            f"https://docs.google.com/document/d/{doc_id}/edit")
 
         _, reqs = _build_all_blocks(report_data)
-
         docs_svc.documents().batchUpdate(
             documentId=doc_id, body={"requests": reqs}
         ).execute()
@@ -503,15 +389,11 @@ def create_report_doc(report_data: dict) -> Optional[str]:
     except Exception as exc:
         err = str(exc)
         if "storageQuotaExceeded" in err:
-            print(
-                "[gdocs] Квота Drive сервисного аккаунта исчерпана (0 байт).\n"
-                "  Решение: настрой OAuth2 токен личного Google-аккаунта.\n"
-                "  Запусти: python setup_google_oauth.py"
-            )
+            print("[gdocs] Квота Drive исчерпана. Запусти: python setup_google_oauth.py")
         elif "notFound" in err or "404" in err:
-            print(f"[gdocs] Папка не найдена. Проверь GOOGLE_DRIVE_FOLDER_ID в .env")
+            print("[gdocs] Папка не найдена. Проверь GOOGLE_DRIVE_FOLDER_ID")
         elif "403" in err:
-            print(f"[gdocs] Нет доступа. Добавь {_get_sa_email()} как Editor в папку Drive")
+            print(f"[gdocs] Нет доступа. Добавь {_get_sa_email()} как Editor")
         else:
             print(f"[gdocs] Ошибка: {exc}")
         return None
@@ -519,37 +401,25 @@ def create_report_doc(report_data: dict) -> Optional[str]:
 
 # ── Построение документа ──────────────────────────────────────────────────────
 
-def _fmt_date(iso: str) -> str:
-    if not iso:
-        return ""
-    try:
-        d = datetime.fromisoformat(iso[:19])
-        months = ["янв","фев","мар","апр","май","июн",
-                  "июл","авг","сен","окт","ноя","дек"]
-        return f"{d.day} {months[d.month-1]} {d.year}"
-    except Exception:
-        return iso[:10]
-
-
 def _build_all_blocks(r: dict) -> tuple[str, list[dict]]:
     d = DocBuilder()
 
-    geo         = r.get("geo", "GEO")
-    news        = r.get("news", [])
-    angles      = r.get("angles", [])
-    recs        = r.get("recommendations", [])
-    risks       = r.get("risks", [])
-    urg         = r.get("urgency", {})
-    prev_liked  = r.get("prev_liked", [])
-    stats       = r.get("stats", {})
-    created_str = _fmt_date(r.get("created_at", ""))
-    report_id   = r.get("report_id", "")
-    title_val   = r.get("title", "").strip()
-    team_lead   = r.get("team_lead", "")
-    prev_id     = r.get("prev_report_id", "")
-    vertical    = r.get("vertical", "")
-    keywords    = r.get("keywords", "")
-    cover_days  = r.get("coverage_days", 7)
+    geo        = r.get("geo", "GEO")
+    news       = r.get("news", [])
+    angles     = r.get("angles", [])
+    recs       = r.get("recommendations", [])
+    risks      = r.get("risks", [])
+    urg        = r.get("urgency", {})
+    prev_liked = r.get("prev_liked", [])
+    stats      = r.get("stats", {})
+    created_s  = _fmt_date(r.get("created_at", ""))
+    title_val  = r.get("title", "").strip()
+    report_id  = r.get("report_id", "")
+    team_lead  = r.get("team_lead", "")
+    prev_id    = r.get("prev_report_id", "")
+    vertical   = r.get("vertical", "")
+    keywords   = r.get("keywords", "")
+    cover_days = r.get("coverage_days", 7)
 
     n_news = stats.get("total_news",      len(news))
     n_ang  = stats.get("total_angles",    len(angles))
@@ -557,188 +427,335 @@ def _build_all_blocks(r: dict) -> tuple[str, list[dict]]:
                         sum(len(a.get("headlines", [])) for a in angles))
 
     # ── ОБЛОЖКА ───────────────────────────────────────────────────────────────
-    d.divider_thick()
-    d.br()
-
     main_title = title_val or f"NewsForge — {geo} · Выпуск #{report_id}"
-    d.cover_title(main_title)
+    d._add(main_title, bold=True, size_pt=22, color=C_NAVY,
+           align="CENTER", space_above=14, space_below=4)
 
-    sub_parts = [p for p in [geo, f"Выпуск #{report_id}", created_str] if p]
-    d.cover_sub("  ·  ".join(sub_parts))
+    sub_parts = [p for p in [geo, f"Выпуск #{report_id}", created_s] if p]
+    d._add("  ·  ".join(sub_parts), size_pt=11, color=C_LIGHT_TXT,
+           align="CENTER", space_above=2, space_below=2)
 
     meta_parts = [p for p in [
         f"Период: {cover_days} дн.",
-        f"Тимлид: {team_lead}"        if team_lead else None,
-        f"Предыдущий выпуск: #{prev_id}" if prev_id  else None,
-        f"Вертикаль: {vertical}"      if vertical  else None,
-        f"Ключевые слова: {keywords}" if keywords  else None,
+        f"Тимлид: {team_lead}"              if team_lead else None,
+        f"Предыдущий выпуск: #{prev_id}"    if prev_id   else None,
+        f"Вертикаль: {vertical}"            if vertical  else None,
+        f"Ключевые слова: {keywords}"       if keywords  else None,
     ] if p]
     if meta_parts:
-        d.cover_sub("  ·  ".join(meta_parts))
+        d._add("  ·  ".join(meta_parts), size_pt=10.5, color=C_LIGHT_TXT,
+               align="CENTER", space_above=1, space_below=6)
 
-    d.br()
-    d.cover_stats(
-        f"📰  {n_news} инфоповодов     💡  {n_ang} углов     📝  {n_hl} заголовков"
-    )
-    d.br()
-    d.divider_thick()
-    d.br()
+    d._add(f"  📰  {n_news} инфоповодов     💡  {n_ang} углов     📝  {n_hl} заголовков",
+           bold=True, size_pt=12, color=C_EVER_TXT, align="CENTER",
+           space_above=6, space_below=10)
 
-    # ── БЛОК 1. ИНФОПОВОДЫ ────────────────────────────────────────────────────
-    d.section_header("Блок 1 — Инфоповоды", count=len(news))
+    # Толстый разделитель
+    d._add("", border_bottom=_bspec(C_NAVY, width_pt=2, pad_pt=0),
+           space_above=0, space_below=18)
 
-    for i, n in enumerate(news, 1):
+    # ─────────────────────────────── БЛОК 1 — ИНФОПОВОДЫ ─────────────────────
+
+    _section_title(d, "Блок 1 — Инфоповоды", n_news)
+
+    _URGENCY_STYLE = {
+        "urgent_48h": (C_URGENT_ACC, C_URGENT_BG, C_URGENT_TXT, "Срочно · 48ч"),
+        "week":       (C_WEEK_ACC,   C_WEEK_BG,   C_WEEK_TXT,   "На неделе"),
+        "eternal":    (C_EVER_ACC,   C_EVER_BG,   C_EVER_TXT,   "Вечная тема"),
+    }
+
+    for i, n in enumerate(news):
         urgency = n.get("urgency", "eternal")
-        d.news_title(i, _clean(n.get("title", "")), urgency)
+        acc, bg, txt, tag_lbl = _URGENCY_STYLE.get(urgency, _URGENCY_STYLE["eternal"])
+        bl = _bspec(acc, width_pt=3, pad_pt=6)
 
+        # Meta (tag line)
+        cat = CATEGORY_RU.get(n.get("category", ""), n.get("category", ""))
         src_parts = [n.get("source", ""),
                      SOURCE_RU.get(n.get("source_type", ""), n.get("source_type", ""))]
         pub = _fmt_date(n.get("published_at", ""))
-        src_line = "   Источник: " + "  ·  ".join(p for p in src_parts if p)
+        src_full = "  ·  ".join(p for p in src_parts if p)
         if pub:
-            src_line += f"   ·   {pub}"
-        d.news_meta(src_line)
+            src_full += f"  ·  {pub}"
+        meta_line = "  ".join(p for p in [tag_lbl, cat, src_full] if p)
 
-        tags = []
-        if n.get("emotional_trigger"):
-            tags.append("Триггер: " + TRIGGER_RU.get(n["emotional_trigger"],
-                                                       n["emotional_trigger"]))
-        if n.get("category"):
-            tags.append("Категория: " + CATEGORY_RU.get(n["category"], n["category"]))
-        if tags:
-            d.news_tags("   " + "   ·   ".join(tags))
+        d._add(f"  {meta_line}",
+               bold=True, size_pt=9.5, color=txt,
+               border_left=bl, border_top=_bspec(C_DIVIDER, width_pt=0.5, pad_pt=0),
+               bg=bg, space_above=10 if i == 0 else 8, space_below=0)
 
+        # Title
+        d._add(f"  {_clean(n.get('title', ''))}",
+               bold=True, size_pt=11.5, color=C_BODY_TXT,
+               border_left=bl, bg=C_WHITE_BG, space_above=0, space_below=0)
+
+        # Description
         desc = _clean(n.get("description", ""))
         if desc:
-            d.news_desc(f"   {desc[:280]}" + ("…" if len(desc) > 280 else ""))
+            d._add(f"  {desc[:280]}{'…' if len(desc) > 280 else ''}",
+                   italic=True, size_pt=10, color=C_GRAY_TXT,
+                   border_left=_bspec(acc, width_pt=1.5, pad_pt=6),
+                   bg=C_WHITE_BG, space_above=0, space_below=0)
 
-        if n.get("original_url"):
-            d.news_link(n["original_url"])
+        # Link
+        url = n.get("original_url", "")
+        if url:
+            d._add(f"  🔗  {_short_url(url)}",
+                   size_pt=9, color=C_BLUE_TXT, italic=True,
+                   border_left=_bspec(acc, width_pt=1.5, pad_pt=6),
+                   bg=C_WHITE_BG,
+                   border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                   space_above=0, space_below=2)
+        else:
+            # Close card bottom
+            d._add("",
+                   border_left=_bspec(acc, width_pt=1.5, pad_pt=6),
+                   bg=C_WHITE_BG,
+                   border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                   space_above=0, space_below=2)
 
-    d.br()
-    d.divider()
-    d.br()
+    d.br(above=4)
+    _block_divider(d)
 
-    # ── БЛОК 2+3. УГЛЫ И ЗАГОЛОВКИ ───────────────────────────────────────────
-    d.section_header(
-        "Блок 2+3 — Маркетинговые углы и заголовки",
-        count=f"{len(angles)} углов · {n_hl} заголовков"
-    )
+    # ─────────────────────────────── БЛОК 2+3 — УГЛЫ И ЗАГОЛОВКИ ─────────────
+
+    _section_title(d, "Блок 2+3 — Маркетинговые углы и заголовки",
+                   f"{len(angles)} углов · {n_hl} заголовков")
+
+    _GRADE_STYLE = {
+        "A": (C_GRADE_A, C_EVER_BG,   C_EVER_ACC,   "grade-a"),
+        "B": (C_GRADE_B, C_WEEK_BG,   C_WEEK_ACC,   "grade-b"),
+        "C": (C_GRADE_C, C_GRAY_BG,   C_GRAY_TXT,   "grade-c"),
+    }
 
     for a in angles:
         pr = a.get("priority", "C")
-        d.angle_header(pr, _clean(a.get("angle_title", "")))
+        g_txt, g_bg, g_acc, _ = _GRADE_STYLE.get(pr, _GRADE_STYLE["C"])
+        bl = _bspec(g_acc, width_pt=3, pad_pt=6)
 
+        # Angle header (priority badge + title)
+        d._add(f"  [{pr}]  {_clean(a.get('angle_title', ''))}",
+               bold=True, size_pt=12, color=g_txt,
+               border_left=bl, border_top=_bspec(C_DIVIDER, width_pt=0.5, pad_pt=0),
+               bg=g_bg, space_above=12, space_below=0)
+
+        # Инфоповод / тип / триггер
+        meta_parts = []
         if a.get("news_title"):
-            d.angle_detail("📰", "Инфоповод",
-                           _clean(a["news_title"]))
+            meta_parts.append(f"Инфоповод: {_clean(a['news_title'])}")
         if a.get("creative_type"):
-            d.angle_detail("🎯", "Тип",
-                           CREATIVE_RU.get(a["creative_type"], a["creative_type"]))
+            meta_parts.append(CREATIVE_RU.get(a["creative_type"], a["creative_type"]))
+        if a.get("emotional_trigger"):
+            meta_parts.append("Триггер: " + TRIGGER_RU.get(a.get("emotional_trigger",""), ""))
+        if meta_parts:
+            d._add(f"  {' · '.join(meta_parts)}",
+                   size_pt=10, color=C_LIGHT_TXT,
+                   border_left=_bspec(g_acc, width_pt=1, pad_pt=6),
+                   bg=C_WHITE_BG, space_above=0, space_below=0)
+
         if a.get("target_pain"):
-            d.angle_detail("💊", "Боль аудитории",
-                           _clean(a["target_pain"]))
+            d._add(f"  Боль: {_clean(a['target_pain'])}",
+                   size_pt=10.5, color=C_GRAY_TXT,
+                   border_left=_bspec(g_acc, width_pt=1, pad_pt=6),
+                   bg=C_WHITE_BG, space_above=0, space_below=0)
+
         if a.get("offer_connection"):
-            d.angle_detail("💰", "Связь с оффером",
-                           _clean(a["offer_connection"]))
+            d._add(f"  {_clean(a['offer_connection'])}",
+                   size_pt=10.5, italic=True, color=C_GRAY_TXT,
+                   border_left=_bspec(g_acc, width_pt=2.5, pad_pt=6),
+                   bg=C_WHITE_BG, space_above=0, space_below=0)
 
         headlines = a.get("headlines", [])
         if headlines:
-            d.headlines_label()
-            for h in headlines:
-                fmt_label = FORMAT_RU.get(h.get("format", ""), h.get("format", ""))
-                chars     = h.get("character_count", len(h.get("text", "")))
-                d.headline_row(_clean(h.get("text", "")), chars, fmt_label)
+            d._add("  📌  Заголовки:",
+                   size_pt=9.5, bold=True, color=C_LIGHT_TXT,
+                   border_left=_bspec(g_acc, width_pt=1, pad_pt=6),
+                   border_top=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                   bg=C_WHITE_BG, space_above=6, space_below=0)
 
-    d.br()
-    d.divider()
-    d.br()
+            for hi, h in enumerate(headlines):
+                fmt_lbl = FORMAT_RU.get(h.get("format", ""), h.get("format", ""))
+                chars   = h.get("character_count", len(h.get("text", "")))
+                is_last = (hi == len(headlines) - 1)
+                d._add(f"      ▸  {_clean(h.get('text',''))}   →   {chars} зн. · {fmt_lbl}",
+                       size_pt=10.5, color=C_BODY_TXT,
+                       border_left=_bspec(g_acc, width_pt=1, pad_pt=6),
+                       border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0) if is_last else None,
+                       bg=C_WHITE_BG, space_above=1, space_below=1 if not is_last else 4)
+        else:
+            # Close card
+            d._add("", border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                   bg=C_WHITE_BG, space_above=0, space_below=4)
 
-    # ── БЛОК 4. РЕКОМЕНДАЦИИ ─────────────────────────────────────────────────
+    d.br(above=4)
+    _block_divider(d)
+
+    # ─────────────────────────────── БЛОК 4 — ТОП-5 ──────────────────────────
+
     if recs:
-        d.section_header("Блок 4 — Топ-5 рекомендаций к тесту")
+        _section_title(d, "Блок 4 — Топ-5 рекомендаций к тесту")
 
         for rec in recs[:5]:
             rank = rec.get("rank", "?")
-            d.rec_header(rank, _clean(rec.get("angle_title", "")))
+
+            # Number badge (как .top-num в HTML)
+            d._add(f"  {rank}   {_clean(rec.get('angle_title', ''))}",
+                   bold=True, size_pt=12, color=C_BODY_TXT,
+                   border_left=_bspec(C_GOLD_TXT, width_pt=3, pad_pt=6),
+                   border_top=_bspec(C_DIVIDER, width_pt=0.5, pad_pt=0),
+                   bg=C_GRAY_BG, space_above=12, space_below=0)
 
             if rec.get("news_title"):
-                d.rec_detail("📰", "Инфоповод", _clean(rec["news_title"]))
+                d._add(f"  Инфоповод: {_clean(rec['news_title'])}",
+                       size_pt=10, color=C_LIGHT_TXT,
+                       border_left=_bspec(C_GOLD_TXT, width_pt=1, pad_pt=6),
+                       bg=C_WHITE_BG, space_above=0, space_below=0)
+
             if rec.get("reasoning"):
-                d.rec_detail("💬", "Обоснование", _clean(rec["reasoning"]))
+                d._add(f"  {_clean(rec['reasoning'])}",
+                       size_pt=10.5, color=C_GRAY_TXT,
+                       border_left=_bspec(C_GOLD_TXT, width_pt=1, pad_pt=6),
+                       bg=C_WHITE_BG, space_above=0, space_below=0)
 
-            d.rec_scores(
-                rec.get("freshness", ""),
-                rec.get("trigger_strength", ""),
-                rec.get("offer_fit", ""),
-            )
+            scores = [p for p in [
+                f"Свежесть: {rec['freshness']}"        if rec.get("freshness")        else None,
+                f"Триггер: {rec['trigger_strength']}"  if rec.get("trigger_strength") else None,
+                f"Оффер: {rec['offer_fit']}"            if rec.get("offer_fit")        else None,
+            ] if p]
+            if scores:
+                d._add(f"  {'   ·   '.join(scores)}",
+                       size_pt=9.5, color=C_EVER_TXT,
+                       border_left=_bspec(C_GOLD_TXT, width_pt=1, pad_pt=6),
+                       border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                       bg=C_WHITE_BG, space_above=2, space_below=4)
 
-        d.br()
-        d.divider()
-        d.br()
+        d.br(above=4)
+        _block_divider(d)
 
-    # ── БЛОК 5. РИСКИ ────────────────────────────────────────────────────────
+    # ─────────────────────────────── БЛОК 5 — РИСКИ ───────────────────────────
+
     if risks:
-        d.section_header("Блок 5 — Оценка рисков", count=len(risks))
+        _section_title(d, "Блок 5 — Оценка рисков", len(risks))
+
+        _RISK_STYLE = {
+            "high":   (C_RISK_H_TXT, C_RISK_H_BG, C_URGENT_ACC),
+            "medium": (C_RISK_M_TXT, C_RISK_M_BG, C_WEEK_ACC),
+            "low":    (C_RISK_L_TXT, C_RISK_L_BG, C_EVER_ACC),
+        }
 
         for risk in risks:
+            ban = risk.get("platform_ban_risk",        "")
+            neg = risk.get("audience_negativity_risk", "")
+            rep = risk.get("reputation_risk",          "")
+            # Pick the most severe level for the card accent
+            severity_order = ["high", "medium", "low"]
+            worst = next((s for s in severity_order if s in (ban, neg, rep)), "low")
+            r_txt, r_bg, r_acc = _RISK_STYLE.get(worst, _RISK_STYLE["low"])
+            bl = _bspec(r_acc, width_pt=3, pad_pt=6)
+
             if risk.get("news_title"):
-                d.risk_header(_clean(risk["news_title"]))
+                d._add(f"  {_clean(risk['news_title'])}",
+                       bold=True, size_pt=11.5, color=C_BODY_TXT,
+                       border_left=bl, border_top=_bspec(C_DIVIDER, width_pt=0.5, pad_pt=0),
+                       bg=C_WHITE_BG, space_above=12, space_below=0)
+
+            # Risk badges
+            def _rbadge(label, val):
+                style = _RISK_STYLE.get(val, _RISK_STYLE["low"])
+                lbl   = RISK_RU.get(val, val)
+                return f"{label}: {lbl}"
+
+            badges_line = "     ".join([
+                _rbadge("Бан", ban),
+                _rbadge("Негатив", neg),
+                _rbadge("Репутация", rep),
+            ])
+            d._add(f"  {badges_line}",
+                   size_pt=10, bold=True, color=r_txt,
+                   border_left=bl, bg=r_bg,
+                   space_above=0, space_below=0)
 
             legal = risk.get("legal_risks", [])
             if legal:
-                d.risk_legal([_clean(x) for x in legal])
-
-            d.risk_row(
-                risk.get("platform_ban_risk", ""),
-                risk.get("audience_negativity_risk", ""),
-                risk.get("reputation_risk", ""),
-            )
+                d._add(f"  ⚖️  {';  '.join(_clean(x) for x in legal)}",
+                       size_pt=10, color=C_RISK_H_TXT,
+                       border_left=_bspec(r_acc, width_pt=1, pad_pt=6),
+                       bg=C_WHITE_BG, space_above=0, space_below=0)
 
             if risk.get("expiry_date"):
-                d.risk_expiry(risk["expiry_date"])
+                d._add(f"  📅  Актуально до: {risk['expiry_date']}",
+                       size_pt=10, italic=True, color=C_LIGHT_TXT,
+                       border_left=_bspec(r_acc, width_pt=1, pad_pt=6),
+                       border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                       bg=C_WHITE_BG, space_above=0, space_below=4)
 
-        d.br()
-        d.divider()
-        d.br()
+        d.br(above=4)
+        _block_divider(d)
 
-    # ── БЛОК 6. СРОЧНОСТЬ ────────────────────────────────────────────────────
-    d.section_header("Блок 6 — Срочность")
+    # ─────────────────────────────── БЛОК 6 — СРОЧНОСТЬ ──────────────────────
+
+    _section_title(d, "Блок 6 — Срочность")
 
     urgent  = urg.get("urgent",  [])
     week    = urg.get("week",    [])
     eternal = urg.get("eternal", [])
 
-    if urgent:
-        d.urgency_group("🔥", "СРОЧНО — тестировать в ближайшие 48 часов",
-                        len(urgent), C_RED)
-        for t in urgent:
-            d.urgency_bullet(_clean(t))
+    _URG_GROUPS = [
+        (urgent,  C_URGENT_TXT, C_URGENT_ACC, C_URGENT_BG, "Срочно — тестировать в ближайшие 48 часов"),
+        (week,    C_WEEK_TXT,   C_WEEK_ACC,   C_WEEK_BG,   "На неделе"),
+        (eternal, C_EVER_TXT,   C_EVER_ACC,   C_EVER_BG,   "Вечные темы"),
+    ]
+    for items, txt, acc, bg, label in _URG_GROUPS:
+        if not items:
+            continue
+        d._add(f"  {label}  ({len(items)})",
+               bold=True, size_pt=11, color=txt,
+               space_above=10, space_below=4)
+        for title_str in items:
+            d._add(f"  {_clean(title_str)}",
+                   size_pt=11, color=C_BODY_TXT,
+                   border_left=_bspec(acc, width_pt=2, pad_pt=6),
+                   border_top=_bspec(C_DIVIDER, width_pt=0.5, pad_pt=0),
+                   border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                   bg=C_WHITE_BG, space_above=2, space_below=2)
 
-    if week:
-        d.urgency_group("⏳", "НА НЕДЕЛЕ", len(week), C_ORANGE)
-        for t in week:
-            d.urgency_bullet(_clean(t))
+    d.br(above=6)
+    # Финальный разделитель
+    d._add("", border_bottom=_bspec(C_NAVY, width_pt=2, pad_pt=0),
+           space_above=0, space_below=16)
 
-    if eternal:
-        d.urgency_group("♾️", "ВЕЧНЫЕ ТЕМЫ", len(eternal), C_GRAY)
-        for t in eternal:
-            d.urgency_bullet(_clean(t))
+    # ─────────────────────────────── ПРОШЛЫЙ ВЫПУСК ───────────────────────────
 
-    d.br()
-    d.divider_thick()
-    d.br()
-
-    # ── ПРОШЛЫЙ ВЫПУСК ───────────────────────────────────────────────────────
     if prev_liked:
-        d.section_header(
-            f"Что зашло в прошлый раз  (выпуск #{prev_id})"
-        )
-        d._add("   👍  Углы с положительной оценкой:",
-               size_pt=10.5, italic=True, color=C_TEAL,
-               indent=14, space_above=4, space_below=4)
+        prev_label = f"Что зашло в прошлый раз (выпуск #{prev_id})" if prev_id else "Что зашло в прошлый раз"
+        _section_title(d, prev_label)
+
+        d._add("  👍  Углы с положительной оценкой:",
+               size_pt=10.5, italic=True, color=C_EVER_TXT,
+               space_above=4, space_below=4)
+
         for a in prev_liked:
-            d.prev_item(a.get("priority", "?"), _clean(a.get("angle_title", "")))
-        d.br()
+            pr = a.get("priority", "?")
+            g_txt, g_bg, g_acc, _ = _GRADE_STYLE.get(pr, _GRADE_STYLE["C"])
+            d._add(f"  [{pr}]  {_clean(a.get('angle_title', ''))}",
+                   size_pt=10.5, color=g_txt,
+                   border_left=_bspec(g_acc, width_pt=2, pad_pt=6),
+                   border_top=_bspec(C_DIVIDER, width_pt=0.5, pad_pt=0),
+                   border_bottom=_bspec(C_INNER_DIV, width_pt=0.5, pad_pt=0),
+                   bg=g_bg, space_above=2, space_below=2)
 
     return d.build_requests()
+
+
+# ── Мелкие помощники ──────────────────────────────────────────────────────────
+
+def _section_title(d: DocBuilder, label: str, count=None):
+    tail = f"  ({count})" if count is not None else ""
+    d._add(f"  {label.upper()}{tail}",
+           bold=True, size_pt=11, color=C_LIGHT_TXT,
+           space_above=18, space_below=6)
+
+
+def _block_divider(d: DocBuilder):
+    d._add("", border_bottom=_bspec(C_DIVIDER, width_pt=1, pad_pt=0),
+           space_above=0, space_below=4)
