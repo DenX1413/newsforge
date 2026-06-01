@@ -26,7 +26,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # Config
-DEFAULT_GEOS = os.getenv("DEFAULT_GEOS", "RU,UA,BY").split(",")
+DEFAULT_GEOS = os.getenv("DEFAULT_GEOS", "IN,BR,MX").split(",")
 NEWS_COVERAGE_DAYS = int(os.getenv("NEWS_COVERAGE_DAYS", "7"))
 PIPELINE_RUN_INTERVAL_HOURS = int(os.getenv("PIPELINE_RUN_INTERVAL_HOURS", "72"))
 
@@ -48,4 +48,4 @@ TRIGGERS = ["money", "crisis", "opportunity", "fear", "trust"]
 PRIORITY_LEVELS = ["A", "B", "C"]
 
 # Urgency types
-URGENCY_TYPES = ["urgent", "eternal"]
+URGENCY_TYPES = ["urgent_48h", "week", "eternal"]

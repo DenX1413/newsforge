@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 from models import NewsItem, Angle, Headline, RiskAssessment
 
 
@@ -11,7 +11,9 @@ class ReportGenerator:
         angles: List[Angle],
         headlines: List[Headline],
         risks: List[RiskAssessment],
+        recommendations: List[Dict] = None,
         responsible_lead: str = "Team Lead",
+        previous_report_url: str = None,
     ) -> Dict:
         """Generate comprehensive report"""
 
@@ -75,23 +77,48 @@ class ReportGenerator:
                 }
             )
 
-        # Block 4: Testing recommendations
-        top_5_angles = sorted(angles[:5], key=lambda x: x.priority)
+        # Block 4: Testing recommendations — use LLM-generated list when available
+        headlines_by_angle = {}
+        for h in headlines:
+            headlines_by_angle.setdefault(h.angle_id, []).append(h.text)
+
+        if recommendations:
+            block_4_items = [
+                {
+                    "rank": rec.get("rank", i + 1),
+                    "angle_id": rec.get("angle_id"),
+                    "angle_title": rec.get("angle_title", ""),
+                    "news_title": rec.get("news_title", ""),
+                    "freshness": rec.get("freshness", ""),
+                    "trigger_strength": rec.get("trigger_strength", ""),
+                    "offer_fit": rec.get("offer_fit", ""),
+                    "reasoning": rec.get("reasoning", ""),
+                    "headlines": headlines_by_angle.get(rec.get("angle_id"), [])[:3],
+                }
+                for i, rec in enumerate(recommendations[:5])
+            ]
+        else:
+            top_5_angles = sorted(
+                [a for a in angles if a.priority == "A"], key=lambda x: x.id
+            )[:5] or angles[:5]
+            block_4_items = [
+                {
+                    "rank": i + 1,
+                    "angle_id": angle.id,
+                    "angle_title": angle.angle_title,
+                    "news_title": "",
+                    "freshness": "—",
+                    "trigger_strength": f"Приоритет {angle.priority}",
+                    "offer_fit": "—",
+                    "reasoning": f"Автоматически выбран по приоритету {angle.priority}",
+                    "headlines": headlines_by_angle.get(angle.id, [])[:3],
+                }
+                for i, angle in enumerate(top_5_angles)
+            ]
+
         block_4 = {
             "title": "Block 4. Рекомендации к тесту",
-            "top_5_angles": [
-                {
-                    "id": angle.id,
-                    "angle_title": angle.angle_title,
-                    "reasoning": f"Priority: {angle.priority}, Trigger: соответствует целевой аудитории",
-                    "headlines": [
-                        h.text
-                        for h in headlines
-                        if h.angle_id == angle.id
-                    ][:3],
-                }
-                for angle in top_5_angles
-            ],
+            "top_5_angles": block_4_items,
         }
 
         # Block 5: Risks
@@ -110,17 +137,16 @@ class ReportGenerator:
             ],
         }
 
-        # Block 6: Urgency summary
+        # Block 6: Urgency summary — three levels
         urgent_items = [item for item in news_items if item.urgency == "urgent_48h"]
+        week_items   = [item for item in news_items if item.urgency == "week"]
         eternal_items = [item for item in news_items if item.urgency == "eternal"]
 
         block_6 = {
             "title": "Block 6. Срочность",
             "urgent": [{"headline": item.title, "urgency": "🔥 Срочно (48ч)"} for item in urgent_items],
-            "eternal": [
-                {"headline": item.title, "urgency": "⏳ Вечная тема"}
-                for item in eternal_items
-            ],
+            "week":   [{"headline": item.title, "urgency": "📅 На этой неделе"} for item in week_items],
+            "eternal": [{"headline": item.title, "urgency": "⏳ Вечная тема"} for item in eternal_items],
         }
 
         # Compile full report
@@ -130,6 +156,7 @@ class ReportGenerator:
                 "generated_at": datetime.now().isoformat(),
                 "coverage_days": 7,
                 "responsible_lead": responsible_lead,
+                "previous_report_url": previous_report_url,
                 "source_types": list(set(item.source_type for item in news_items)),
             },
             "block_1": block_1,
@@ -159,6 +186,7 @@ class ReportGenerator:
 📅 Дата: {report['header']['generated_at'][:10]}
 👤 Ответственный: {report['header']['responsible_lead']}
 📊 Период покрытия: последние {report['header']['coverage_days']} дней
+🔗 Предыдущий выпуск: {report['header'].get('previous_report_url') or 'первый выпуск'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -174,8 +202,13 @@ class ReportGenerator:
         text += f"\n📌 БЛОК 4: ТОП-5 РЕКОМЕНДАЦИЙ К ТЕСТУ\n\n"
 
         for item in report["block_4"]["top_5_angles"]:
-            text += f"💡 ID {item['id']}: {item['angle_title']}\n"
-            text += f"   Обоснование: {item['reasoning']}\n"
+            text += f"💡 #{item.get('rank','?')} ID {item.get('angle_id','?')}: {item['angle_title']}\n"
+            if item.get('news_title'):
+                text += f"   Инфоповод: {item['news_title']}\n"
+            text += f"   Свежесть: {item.get('freshness','—')}\n"
+            text += f"   Сила триггера: {item.get('trigger_strength','—')}\n"
+            text += f"   Соответствие офферу: {item.get('offer_fit','—')}\n"
+            text += f"   Вывод: {item['reasoning']}\n"
             text += f"   Заголовки:\n"
             for headline in item["headlines"]:
                 text += f"     • {headline}\n"
@@ -184,6 +217,7 @@ class ReportGenerator:
         text += f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         text += f"\n⏰ СРОЧНОСТЬ\n\n"
         text += f"🔥 Срочно (48ч): {len(report['block_6']['urgent'])} новостей\n"
+        text += f"📅 На этой неделе: {len(report['block_6'].get('week', []))} новостей\n"
         text += f"⏳ Вечные темы: {len(report['block_6']['eternal'])} новостей\n"
 
         text += f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"

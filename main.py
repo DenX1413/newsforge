@@ -57,6 +57,16 @@ class MonitoringPipeline:
         risks = self.llm_processor.assess_risks(classified_items)
         print(f"   ✅ Assessed {len(risks)} items")
 
+        # Step 5b: Select top-5 recommendations with detailed reasoning (Sonnet)
+        print(f"🏆 Step 5b: Selecting top-5 recommendations...")
+        recommendations = self.llm_processor.generate_recommendations(angles, classified_items)
+        print(f"   ✅ Got {len(recommendations)} recommendations")
+
+        # Find URL of the previous report for this GEO (most recent JSON file)
+        import glob as _glob
+        prev_files = sorted(_glob.glob(f"report_{geo}_*.json"))
+        previous_report_url = prev_files[-1] if prev_files else None
+
         # Step 6: Generate report
         print(f"📊 Step 6: Generating report...")
         report = self.report_generator.generate_report(
@@ -65,7 +75,9 @@ class MonitoringPipeline:
             angles=angles,
             headlines=headlines,
             risks=risks,
+            recommendations=recommendations,
             responsible_lead="AI Monitor",
+            previous_report_url=previous_report_url,
         )
         print(f"   ✅ Report generated")
 
