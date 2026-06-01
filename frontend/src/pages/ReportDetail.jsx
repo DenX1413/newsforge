@@ -307,10 +307,24 @@ function AngleCard({ angle }) {
   const { t } = useLang();
   const TYPE_LABELS = getTypeLabels(t);
   const [fb, setFb] = useState(angle.feedback ?? 0);
+
+  // Sync local state when server data changes (e.g. report refetch), but only
+  // if the angle itself changes — not on every parent render.
+  const angleId = angle.id;
+  useEffect(() => {
+    setFb(angle.feedback ?? 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [angleId]);
+
   const vote = async (val) => {
+    const prev = fb;
     const next = fb === val ? 0 : val;
     setFb(next);
-    await setFeedback(angle.id, next);
+    try {
+      await setFeedback(angle.id, next);
+    } catch {
+      setFb(prev);
+    }
   };
 
   const copyText = [
