@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Clock, Newspaper, Lightbulb, Type, ChevronRight, Star,
@@ -143,6 +143,17 @@ export default function ReportCard({ report, onDelete, onFavoriteToggle }) {
   const [favorite,   setFavorite]   = useState(!!report.is_favorite);
   const [favLoading, setFavLoading] = useState(false);
 
+  const [isNew, setIsNew] = useState(
+    () => Date.now() - new Date(report.created_at) < 86_400_000
+  );
+  useEffect(() => {
+    if (!isNew) return;
+    const msLeft = 86_400_000 - (Date.now() - new Date(report.created_at));
+    if (msLeft <= 0) { setIsNew(false); return; }
+    const timer = setTimeout(() => setIsNew(false), msLeft);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleDelete = async (e) => {
     e.stopPropagation();
     setDeleting(true);
@@ -190,6 +201,11 @@ export default function ReportCard({ report, onDelete, onFavoriteToggle }) {
               {report.status === "error"   && <AlertCircle size={10} />}
               {stLabel}
             </span>
+            {isNew && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">
+                NEW
+              </span>
+            )}
             <span className="text-xs text-gray-600 flex items-center gap-1">
               <Clock size={10} /> {fmt(report.created_at)}
             </span>
