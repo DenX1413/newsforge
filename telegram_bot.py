@@ -2,75 +2,151 @@
 """
 Telegram Bot — интерактивный интерфейс для AI-мониторинга инфоповодов.
 
+Все запуски пайплайна идут через FastAPI (/api/run), поэтому отчёты
+сохраняются в общую SQLite-базу и сразу видны на веб-сайте.
+
 Команды:
   /start         — приветствие и список команд
   /help          — справка
   /run <GEO>     — запустить пайплайн для GEO (IN/BR/MX/RU/UA/BY/...)
   /run_all       — запустить для всех дефолтных GEO
   /geos          — список поддерживаемых GEO
-  /last <GEO>    — получить последний отчёт по GEO (краткий)
+  /last <GEO>    — последний отчёт по GEO из базы
   /status        — статус бота
 """
 
 import asyncio
-import json
 import os
-import glob
+import time
 import threading
-from datetime import datetime
+import requests as _http
 
 from telegram import Update, BotCommand
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram.constants import ParseMode
 
 from config import TELEGRAM_BOT_TOKEN, DEFAULT_GEOS
-from news_parser import NewsParser
-from llm_processor import LLMProcessor
-from report_generator import ReportGenerator
-from notification_manager import NotificationManager
 
-# GEOs that have RSS/Google News configured in news_parser.py
 SUPPORTED_GEOS = ["IN", "BR", "MX", "RU", "UA", "BY", "KZ", "DE", "PL"]
 
-_running_jobs: dict[str, bool] = {}
+# FastAPI runs on the same host — same container on Railway, localhost in dev
+API_BASE = os.getenv("API_BASE_URL", "http://localhost:8000")
+
+_running_jobs: dict[str, int] = {}   # geo → report_id
 
 
-def _run_pipeline_sync(geo: str) -> dict | None:
-    """Run pipeline synchronously (called inside a thread)."""
-    from main import MonitoringPipeline
-    pipeline = MonitoringPipeline()
-    return pipeline.run_for_geo(geo)
+# ── API helpers ───────────────────────────────────────────────────────────────
 
+def _api_run(geo: str, team_lead: str = "Telegram Bot") -> int:
+    """POST /api/run → returns report_id."""
+    resp = _http.post(f"{API_BASE}/api/run", json={
+        "geo": geo,
+        "use_mock": False,
+        "team_lead": team_lead,
+    }, timeout=30)
+    resp.raise_for_status()
+    return resp.json()["report_id"]
+
+
+def _api_poll(report_id: int, timeout: int = 600, interval: int = 15) -> dict:
+    """Poll GET /api/reports/{id} until status == done or error."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        resp = _http.get(f"{API_BASE}/api/reports/{report_id}", timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        if data["status"] in ("done", "error"):
+            return data
+        time.sleep(interval)
+    raise TimeoutError(f"Report {report_id} did not finish in {timeout}s")
+
+
+def _api_last(geo: str) -> dict | None:
+    """GET /api/reports?geo=X → return the most recent done report detail."""
+    resp = _http.get(f"{API_BASE}/api/reports", params={"geo": geo}, timeout=15)
+    resp.raise_for_status()
+    reports = resp.json()
+    done = [r for r in reports if r["status"] == "done"]
+    if not done:
+        return None
+    report_id = done[0]["id"]
+    detail = _http.get(f"{API_BASE}/api/reports/{report_id}", timeout=15)
+    detail.raise_for_status()
+    return detail.json()
+
+
+# ── Summary formatter ─────────────────────────────────────────────────────────
+
+def _format_summary(report: dict) -> str:
+    """Build a compact Telegram-friendly summary from the API report response."""
+    geo        = report.get("geo", "?")
+    created    = (report.get("created_at") or "")[:10]
+    team_lead  = report.get("team_lead") or ""
+    stats      = report.get("stats", {})
+    recs       = report.get("recommendations") or []
+    news_list  = report.get("news", [])
+    report_id  = report.get("id", "?")
+
+    app_url = os.getenv("APP_URL", "").rstrip("/")
+    site_link = f'\n🌐 <a href="{app_url}/report/{report_id}">Открыть на сайте</a>' if app_url else ""
+
+    urgent  = sum(1 for n in news_list if n.get("urgency") == "urgent_48h")
+    week    = sum(1 for n in news_list if n.get("urgency") == "week")
+    eternal = sum(1 for n in news_list if n.get("urgency") == "eternal")
+
+    lines = [
+        f"📊 <b>Отчёт {geo}</b>  #{report_id}",
+        f"📅 {created}  |  👤 {team_lead}",
+        f"📰 {stats.get('total_news',0)} новостей  |  "
+        f"💡 {stats.get('total_angles',0)} углов  |  "
+        f"📝 {stats.get('total_headlines',0)} заголовков",
+        f"⏰ 🔥 {urgent} срочных  📅 {week} на неделе  ⏳ {eternal} вечных",
+        site_link,
+    ]
+
+    if recs:
+        lines.append("\n🏆 <b>Топ-5 рекомендаций:</b>")
+        for rec in recs[:5]:
+            rank      = rec.get("rank", "?")
+            title     = (rec.get("angle_title") or "")[:80]
+            reasoning = (rec.get("reasoning") or "")[:120]
+            headlines  = rec.get("headlines") or []
+            lines.append(f"\n#{rank}. <b>{title}</b>")
+            if reasoning:
+                lines.append(f"   💬 {reasoning}")
+            for hl in headlines[:2]:
+                lines.append(f"   • {hl}")
+
+    return "\n".join(lines)
+
+
+# ── Command handlers ──────────────────────────────────────────────────────────
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    text = (
+    await update.message.reply_text(
         "👋 <b>AI Мониторинг инфоповодов</b>\n\n"
-        "Доступные команды:\n"
-        "/run <code>GEO</code> — запустить пайплайн (например <code>/run IN</code>)\n"
+        "Команды:\n"
+        "/run <code>GEO</code> — запустить пайплайн (пример: <code>/run IN</code>)\n"
         "/run_all — запустить для всех дефолтных GEO\n"
-        "/last <code>GEO</code> — последний отчёт по GEO\n"
+        "/last <code>GEO</code> — последний отчёт из базы\n"
         "/geos — список поддерживаемых GEO\n"
         "/status — статус\n"
-        "/help — справка"
+        "/help — справка",
+        parse_mode=ParseMode.HTML,
     )
-    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    text = (
+    await update.message.reply_text(
         "📖 <b>Справка</b>\n\n"
-        "<b>/run IN</b> — запустить полный AI-пайплайн для Индии:\n"
+        "<b>/run IN</b> — запустить AI-пайплайн для Индии:\n"
         "  1. Сбор новостей (RSS + Google News + Twitter)\n"
-        "  2. Классификация (Haiku)\n"
-        "  3. Генерация углов (Sonnet)\n"
-        "  4. Генерация заголовков (Sonnet)\n"
-        "  5. Оценка рисков (Sonnet)\n"
-        "  6. Топ-5 рекомендаций с обоснованием\n\n"
-        "Отчёт сохраняется в JSON и отправляется сюда кратким саммари.\n\n"
+        "  2. Классификация Haiku → углы Sonnet → заголовки → риски → топ-5\n"
+        "  Отчёт сразу виден на сайте и в БД.\n\n"
         f"Дефолтные GEO: {', '.join(DEFAULT_GEOS)}\n"
-        f"Поддерживаемые GEO: {', '.join(SUPPORTED_GEOS)}"
+        f"Все поддерживаемые: {', '.join(SUPPORTED_GEOS)}",
+        parse_mode=ParseMode.HTML,
     )
-    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
 async def cmd_geos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -82,8 +158,10 @@ async def cmd_geos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if _running_jobs:
-        jobs = ", ".join(f"<code>{g}</code>" for g in _running_jobs)
-        text = f"⚙️ <b>Сейчас выполняется:</b> {jobs}"
+        jobs = ", ".join(
+            f"<code>{g}</code> (report #{rid})" for g, rid in _running_jobs.items()
+        )
+        text = f"⚙️ <b>Сейчас выполняется:</b>\n{jobs}"
     else:
         text = "✅ Бот готов к работе. Активных задач нет."
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
@@ -106,26 +184,29 @@ async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if geo in _running_jobs:
+        rid = _running_jobs[geo]
         await update.message.reply_text(
-            f"⚙️ Пайплайн для <code>{geo}</code> уже запущен.", parse_mode=ParseMode.HTML
+            f"⚙️ Пайплайн для <code>{geo}</code> уже выполняется (report #{rid}).",
+            parse_mode=ParseMode.HTML,
         )
         return
 
     await update.message.reply_text(
-        f"🚀 Запускаю пайплайн для <b>{geo}</b>...\nЭто займёт ~5 минут.",
+        f"🚀 Запускаю пайплайн для <b>{geo}</b> через API...\nЭто займёт ~5 минут.",
         parse_mode=ParseMode.HTML,
     )
 
-    _running_jobs[geo] = True
     chat_id = update.effective_chat.id
 
-    def _worker():
+    def _worker(geo: str):
         try:
-            report = _run_pipeline_sync(geo)
-            if report:
+            report_id = _api_run(geo)
+            _running_jobs[geo] = report_id
+            report = _api_poll(report_id)
+            if report["status"] == "done":
                 summary = _format_summary(report)
             else:
-                summary = f"⚠️ Нет данных для <b>{geo}</b>. Проверь источники."
+                summary = f"❌ Пайплайн завершился с ошибкой для <b>{geo}</b>."
         except Exception as exc:
             summary = f"❌ Ошибка для <b>{geo}</b>:\n<code>{exc}</code>"
         finally:
@@ -136,7 +217,7 @@ async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             context.application.loop,
         )
 
-    threading.Thread(target=_worker, daemon=True).start()
+    threading.Thread(target=_worker, args=(geo,), daemon=True).start()
 
 
 async def cmd_run_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -149,7 +230,7 @@ async def cmd_run_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     await update.message.reply_text(
-        f"🌍 Запускаю пайплайн для всех GEO: <b>{', '.join(DEFAULT_GEOS)}</b>",
+        f"🌍 Запускаю пайплайн для: <b>{', '.join(DEFAULT_GEOS)}</b>",
         parse_mode=ParseMode.HTML,
     )
 
@@ -159,10 +240,12 @@ async def cmd_run_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         for geo in DEFAULT_GEOS:
             if geo in _running_jobs:
                 continue
-            _running_jobs[geo] = True
             try:
-                report = _run_pipeline_sync(geo)
-                summary = _format_summary(report) if report else f"⚠️ Нет данных для <b>{geo}</b>."
+                report_id = _api_run(geo)
+                _running_jobs[geo] = report_id
+                report = _api_poll(report_id)
+                summary = _format_summary(report) if report["status"] == "done" \
+                    else f"❌ Ошибка пайплайна для <b>{geo}</b>."
             except Exception as exc:
                 summary = f"❌ Ошибка для <b>{geo}</b>:\n<code>{exc}</code>"
             finally:
@@ -184,65 +267,24 @@ async def cmd_last(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     geo = context.args[0].upper()
-    files = sorted(glob.glob(f"report_{geo}_*.json"))
-    if not files:
+    try:
+        report = _api_last(geo)
+    except Exception as exc:
         await update.message.reply_text(
-            f"📭 Нет сохранённых отчётов для <code>{geo}</code>.", parse_mode=ParseMode.HTML
+            f"❌ Не удалось получить отчёт: <code>{exc}</code>", parse_mode=ParseMode.HTML
         )
         return
 
-    latest = files[-1]
-    try:
-        with open(latest, encoding="utf-8") as f:
-            report = json.load(f)
-        summary = _format_summary(report)
-        summary += f"\n\n📁 Файл: <code>{latest}</code>"
-    except Exception as exc:
-        summary = f"❌ Не удалось прочитать отчёт: <code>{exc}</code>"
+    if not report:
+        await update.message.reply_text(
+            f"📭 Нет завершённых отчётов для <code>{geo}</code>.", parse_mode=ParseMode.HTML
+        )
+        return
 
-    await update.message.reply_text(summary, parse_mode=ParseMode.HTML)
+    await update.message.reply_text(_format_summary(report), parse_mode=ParseMode.HTML)
 
 
-def _format_summary(report: dict) -> str:
-    """Build a compact Telegram-friendly summary of a report."""
-    h = report.get("header", {})
-    stats = report.get("stats", {})
-    b4 = report.get("block_4", {}).get("top_5_angles", [])
-    b6 = report.get("block_6", {})
-
-    urgent_count = len(b6.get("urgent", []))
-    week_count   = len(b6.get("week", []))
-    eternal_count = len(b6.get("eternal", []))
-
-    lines = [
-        f"📊 <b>Отчёт по инфоповодам: {h.get('geo','?')}</b>",
-        f"📅 {h.get('generated_at','')[:10]}  |  👤 {h.get('responsible_lead','')}",
-        f"📰 Новостей: {stats.get('total_news',0)}  |  "
-        f"💡 Углов: {stats.get('total_angles',0)}  |  "
-        f"📝 Заголовков: {stats.get('total_headlines',0)}",
-        "",
-        f"⏰ <b>Срочность:</b>  🔥 {urgent_count}  📅 {week_count}  ⏳ {eternal_count}",
-    ]
-
-    if h.get("previous_report_url"):
-        lines.append(f"🔗 Предыдущий: <code>{h['previous_report_url']}</code>")
-
-    if b4:
-        lines.append("")
-        lines.append("🏆 <b>Топ-5 рекомендаций:</b>")
-        for rec in b4[:5]:
-            rank = rec.get("rank", "?")
-            title = rec.get("angle_title", "")[:80]
-            reasoning = rec.get("reasoning", "")[:120]
-            headlines = rec.get("headlines", [])
-            lines.append(f"\n#{rank}. <b>{title}</b>")
-            if reasoning:
-                lines.append(f"   💬 {reasoning}")
-            for hl in headlines[:2]:
-                lines.append(f"   • {hl}")
-
-    return "\n".join(lines)
-
+# ── App setup ─────────────────────────────────────────────────────────────────
 
 async def _set_commands(app: Application) -> None:
     await app.bot.set_my_commands([
@@ -262,7 +304,6 @@ def run_bot() -> None:
         raise RuntimeError("TELEGRAM_BOT_TOKEN не задан в .env")
 
     app = Application.builder().token(token).post_init(_set_commands).build()
-
     app.add_handler(CommandHandler("start",   cmd_start))
     app.add_handler(CommandHandler("help",    cmd_help))
     app.add_handler(CommandHandler("geos",    cmd_geos))
@@ -271,7 +312,7 @@ def run_bot() -> None:
     app.add_handler(CommandHandler("run_all", cmd_run_all))
     app.add_handler(CommandHandler("last",    cmd_last))
 
-    print(f"🤖 Telegram-бот запущен. Дефолтные GEO: {', '.join(DEFAULT_GEOS)}")
+    print(f"🤖 Telegram-бот запущен. API: {API_BASE}. Дефолтные GEO: {', '.join(DEFAULT_GEOS)}")
     app.run_polling(drop_pending_updates=True)
 
 
