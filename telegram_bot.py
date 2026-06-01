@@ -78,44 +78,53 @@ def _api_last(geo: str) -> dict | None:
 # ── Summary formatter ─────────────────────────────────────────────────────────
 
 def _format_summary(report: dict) -> str:
-    """Build a compact Telegram-friendly summary from the API report response."""
-    geo        = report.get("geo", "?")
-    created    = (report.get("created_at") or "")[:10]
-    team_lead  = report.get("team_lead") or ""
-    stats      = report.get("stats", {})
-    recs       = report.get("recommendations") or []
-    news_list  = report.get("news", [])
-    report_id  = report.get("id", "?")
+    """Compact summary matching the notifier.py format — stays well under 4096 chars."""
+    from datetime import datetime as _dt
 
-    app_url = os.getenv("APP_URL", "").rstrip("/")
-    site_link = f'\n🌐 <a href="{app_url}/report/{report_id}">Открыть на сайте</a>' if app_url else ""
+    geo       = report.get("geo", "?")
+    report_id = report.get("id", "?")
+    team_lead = report.get("team_lead") or ""
+    stats     = report.get("stats", {})
+    news_list = report.get("news", [])
+    gdocs_url = report.get("gdocs_url") or ""
+
+    app_url    = os.getenv("APP_URL", "").rstrip("/")
+    report_url = f"{app_url}/report/{report_id}" if app_url else ""
+
+    created_raw = report.get("created_at") or ""
+    try:
+        created = _dt.fromisoformat(created_raw).strftime("%d.%m.%Y %H:%M")
+    except Exception:
+        created = created_raw[:16]
 
     urgent  = sum(1 for n in news_list if n.get("urgency") == "urgent_48h")
     week    = sum(1 for n in news_list if n.get("urgency") == "week")
     eternal = sum(1 for n in news_list if n.get("urgency") == "eternal")
 
     lines = [
-        f"📊 <b>Отчёт {geo}</b>  #{report_id}",
-        f"📅 {created}  |  👤 {team_lead}",
-        f"📰 {stats.get('total_news',0)} новостей  |  "
-        f"💡 {stats.get('total_angles',0)} углов  |  "
-        f"📝 {stats.get('total_headlines',0)} заголовков",
-        f"⏰ 🔥 {urgent} срочных  📅 {week} на неделе  ⏳ {eternal} вечных",
-        site_link,
+        f"🗞 <b>Новый отчёт готов: {geo}</b>",
+        f"📅 {created}",
+    ]
+    if team_lead:
+        lines.append(f"👤 Тимлид: {team_lead}")
+
+    lines += [
+        "",
+        "📊 <b>Результаты:</b>",
+        f"• {stats.get('total_news', 0)} инфоповодов",
+        f"• {stats.get('total_angles', 0)} маркетинговых углов",
+        f"• {stats.get('total_headlines', 0)} заголовков",
+        "",
+        f"🔥 Срочно (48ч): {urgent}",
+        f"📅 На неделе: {week}",
+        f"♾️ Вечные темы: {eternal}",
+        "",
     ]
 
-    if recs:
-        lines.append("\n🏆 <b>Топ-5 рекомендаций:</b>")
-        for rec in recs[:5]:
-            rank      = rec.get("rank", "?")
-            title     = (rec.get("angle_title") or "")[:80]
-            reasoning = (rec.get("reasoning") or "")[:120]
-            headlines  = rec.get("headlines") or []
-            lines.append(f"\n#{rank}. <b>{title}</b>")
-            if reasoning:
-                lines.append(f"   💬 {reasoning}")
-            for hl in headlines[:2]:
-                lines.append(f"   • {hl}")
+    if report_url:
+        lines.append(f'🔗 <a href="{report_url}">Открыть отчёт #{report_id}</a>')
+    if gdocs_url:
+        lines.append(f'📄 <a href="{gdocs_url}">Google Docs версия</a>')
 
     return "\n".join(lines)
 
