@@ -21,4 +21,9 @@ COPY . .
 
 EXPOSE 8000
 
-CMD sh -c "cd backend && uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}"
+# Copy and make startup script executable
+COPY start_prod.sh /app/start_prod.sh
+RUN chmod +x /app/start_prod.sh
+
+# Runs FastAPI (foreground, Railway port) + Telegram bot (background)
+CMD ["/app/start_prod.sh"]
