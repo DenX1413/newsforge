@@ -670,30 +670,40 @@ export default function ReportDetail() {
   };
 
   const handlePdf = () => {
-    const html    = buildPrintHtml(report);
-    const blob    = new Blob([html], { type: "text/html;charset=utf-8" });
-    const blobUrl = URL.createObjectURL(blob);
+    const html = buildPrintHtml(report);
 
-    // Hidden iframe — no popup, no popup-blocker issues
+    // srcdoc iframe is always same-origin → contentWindow.print() works
+    // in all Chromium-based browsers (Chrome, Opera, Yandex, Edge)
     const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none;";
+    iframe.style.cssText =
+      "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;opacity:0;";
     document.body.appendChild(iframe);
 
-    iframe.onload = () => {
+    const cleanup = () => {
+      try { document.body.removeChild(iframe); } catch (_) {}
+    };
+
+    iframe.addEventListener("load", () => {
       try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
+        setTimeout(cleanup, 3000);
       } catch (_) {
-        // Fallback: open in new tab if iframe print is restricted
-        window.open(blobUrl, "_blank");
+        // Final fallback: download as HTML file
+        cleanup();
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href     = url;
+        a.download = `newsforge-${report.geo}-${report.id}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
       }
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-        URL.revokeObjectURL(blobUrl);
-      }, 2000);
-    };
+    }, { once: true });
 
-    iframe.src = blobUrl;
+    iframe.srcdoc = html;
   };
 
   const handleDocx = () => {
