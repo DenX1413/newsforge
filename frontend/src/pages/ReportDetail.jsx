@@ -377,8 +377,8 @@ function AngleCard({ angle }) {
 
       <div className="flex items-center gap-2 pt-1 border-t border-gray-800">
         <span className="text-xs text-gray-600">{t("rate_label")}</span>
-        <button onClick={() => vote(1)}  className={`btn-ghost p-1.5 ${fb === 1  ? "text-emerald-400" : ""}`}><ThumbsUp   size={14} /></button>
-        <button onClick={() => vote(-1)} className={`btn-ghost p-1.5 ${fb === -1 ? "text-red-400"     : ""}`}><ThumbsDown size={14} /></button>
+        <button onClick={() => vote(1)}  className={`btn-ghost p-1.5 ${fb === 1  ? "!text-emerald-400" : ""}`}><ThumbsUp   size={14} /></button>
+        <button onClick={() => vote(-1)} className={`btn-ghost p-1.5 ${fb === -1 ? "!text-red-400"     : ""}`}><ThumbsDown size={14} /></button>
       </div>
     </div>
   );
