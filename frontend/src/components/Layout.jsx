@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Zap, FileText, Lightbulb, Type, ThumbsUp, Settings } from "lucide-react";
+import { Zap, FileText, Lightbulb, Type, ThumbsUp, ThumbsDown, Settings } from "lucide-react";
 import { useStats } from "../hooks/useApi.js";
 import { useLang } from "../hooks/useLang.js";
 
@@ -42,7 +42,8 @@ export default function Layout() {
             <StatPill icon={FileText}  value={stats?.total_reports}   label={t("reports_count")}   color="text-sky-400" />
             <StatPill icon={Lightbulb} value={stats?.total_angles}    label={t("angles_count")}    color="text-violet-400" />
             <StatPill icon={Type}      value={stats?.total_headlines} label={t("headlines_count")} color="text-emerald-400" />
-            <StatPill icon={ThumbsUp}  value={stats?.liked_angles}    label={t("likes_count")}     color="text-amber-400" />
+            <StatPill icon={ThumbsUp}   value={stats?.liked_angles}    label={t("likes_count")}    color="text-amber-400" />
+            <StatPill icon={ThumbsDown} value={stats?.disliked_angles} label={t("dislikes_count")} color="text-red-400" />
           </div>
 
           {/* Model badge */}

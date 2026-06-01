@@ -5,6 +5,7 @@ export const TRANSLATIONS = {
     "angles_count":       "углов",
     "headlines_count":    "заголовков",
     "likes_count":        "лайков",
+    "dislikes_count":     "дизлайков",
 
     // Dashboard
     "reports_tab":        "Отчёты",
@@ -265,6 +266,7 @@ export const TRANSLATIONS = {
     "angles_count":       "angles",
     "headlines_count":    "headlines",
     "likes_count":        "likes",
+    "dislikes_count":     "dislikes",
 
     // Dashboard
     "reports_tab":        "Reports",

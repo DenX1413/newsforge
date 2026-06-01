@@ -72,11 +72,21 @@ export function useReport(id) {
 
 export function useStats() {
   const [stats, setStats] = useState(null);
-  useEffect(() => {
+
+  const refetch = useCallback(() => {
     fetch(`${BASE}/stats`).then(r => r.json()).then(setStats).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    refetch();
+    window.addEventListener("nf:feedback", refetch);
+    return () => window.removeEventListener("nf:feedback", refetch);
+  }, [refetch]);
+
   return stats;
 }
+
+
 
 export function useSchedule() {
   const [schedule, setSchedule] = useState([]);
@@ -169,4 +179,5 @@ export async function setFeedback(angleId, feedback) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ feedback }),
   });
+  window.dispatchEvent(new CustomEvent("nf:feedback"));
 }
