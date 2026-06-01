@@ -13,7 +13,7 @@ const STATUS = {
   pending: { label: "в очереди",   cls: "bg-gray-500/15 text-gray-400" },
 };
 
-const GEO_CC = { RU: "ru", UA: "ua", BY: "by", KZ: "kz", DE: "de", PL: "pl" };
+const GEO_CC = { RU: "ru", UA: "ua", BY: "by", KZ: "kz", DE: "de", PL: "pl", IN: "in", BR: "br", MX: "mx" };
 
 export function GeoFlag({ geo, size = 20 }) {
   const cc = GEO_CC[geo];

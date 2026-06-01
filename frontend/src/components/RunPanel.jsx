@@ -1,24 +1,49 @@
 import { useState, useCallback } from "react";
-import { Play, FlaskConical, User, ChevronDown, CheckCheck } from "lucide-react";
+import { Play, FlaskConical, User, ChevronDown, CheckCheck, Globe, Tag } from "lucide-react";
 import { triggerRun } from "../hooks/useApi.js";
 import { GeoFlag } from "./ReportCard.jsx";
 
-const GEOS = ["RU", "UA", "BY", "KZ", "DE", "PL"];
+const GEOS = ["RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"];
 
 const GEO_SEL = {
   RU: "border-red-500/60 text-red-300 bg-red-500/15",
   UA: "border-yellow-500/60 text-yellow-300 bg-yellow-500/15",
   BY: "border-green-500/60 text-green-300 bg-green-500/15",
   KZ: "border-blue-500/60 text-blue-300 bg-blue-500/15",
+  IN: "border-orange-500/60 text-orange-300 bg-orange-500/15",
+  BR: "border-emerald-500/60 text-emerald-300 bg-emerald-500/15",
+  MX: "border-lime-500/60 text-lime-300 bg-lime-500/15",
   DE: "border-purple-500/60 text-purple-300 bg-purple-500/15",
-  PL: "border-orange-500/60 text-orange-300 bg-orange-500/15",
+  PL: "border-pink-500/60 text-pink-300 bg-pink-500/15",
 };
 
+const GEO_LANG = {
+  RU: "русский", UA: "украинский", BY: "белорусский",
+  KZ: "русский", IN: "English", BR: "português",
+  MX: "español", DE: "Deutsch", PL: "polski",
+};
+
+const VERTICALS = [
+  { value: "",          label: "Без вертикали" },
+  { value: "финансы",   label: "💰 Финансы / инвестиции" },
+  { value: "крипто",    label: "₿ Крипто / блокчейн" },
+  { value: "форекс",    label: "📈 Форекс / трейдинг" },
+  { value: "займы",     label: "🏦 Займы / кредиты" },
+  { value: "e-commerce",label: "🛒 E-commerce" },
+  { value: "образование",label: "🎓 Образование" },
+  { value: "недвижимость",label: "🏠 Недвижимость" },
+  { value: "гемблинг",  label: "🎰 Гемблинг / ставки" },
+  { value: "custom",    label: "✏️ Свои ключевые слова" },
+];
+
 export default function RunPanel({ onDone }) {
-  const [selected, setSelected] = useState(new Set(["RU"]));
-  const [useMock, setUseMock]   = useState(false);
-  const [teamLead, setTeamLead] = useState("");
-  const [showLead, setShowLead] = useState(false);
+  const [selected, setSelected]   = useState(new Set(["RU"]));
+  const [useMock, setUseMock]     = useState(false);
+  const [teamLead, setTeamLead]   = useState("");
+  const [showLead, setShowLead]   = useState(false);
+  const [vertical, setVertical]   = useState("");
+  const [keywords, setKeywords]   = useState("");
+  const [language, setLanguage]   = useState("");
 
   const [running, setRunning]   = useState(false);
   const [progress, setProgress] = useState(null);  // { pct, message }
@@ -46,7 +71,10 @@ export default function RunPanel({ onDone }) {
     setRunning(true);
     setProgress({ pct: 5, message: "Инициализация…" });
 
-    const { report_id } = await triggerRun(geo, useMock, teamLead);
+    const vert = vertical === "custom" ? "" : vertical;
+    const kw   = vertical === "custom" ? keywords : "";
+    const lang = language || GEO_LANG[geo] || "";
+    const { report_id } = await triggerRun(geo, useMock, teamLead, vert, kw, lang);
 
     const STEPS = [
       "Парсинг RSS и Google News…",
@@ -97,7 +125,10 @@ export default function RunPanel({ onDone }) {
     const ids = [];
     for (const g of geoList) {
       try {
-        const { report_id } = await triggerRun(g, useMock, teamLead);
+        const vert = vertical === "custom" ? "" : vertical;
+        const kw   = vertical === "custom" ? keywords : "";
+        const lang = language || GEO_LANG[g] || "";
+        const { report_id } = await triggerRun(g, useMock, teamLead, vert, kw, lang);
         ids.push({ geo: g, id: report_id });
         await new Promise(r => setTimeout(r, 400));
       } catch (e) {
@@ -188,6 +219,56 @@ export default function RunPanel({ onDone }) {
           <Play size={12} className={running ? "animate-pulse" : ""} />
           {btnLabel}
         </button>
+      </div>
+
+      {/* ── Vertical + language row ── */}
+      <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-800">
+        {/* Vertical selector */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-[180px]">
+          <Tag size={12} className="text-violet-400 shrink-0" />
+          <select
+            value={vertical}
+            onChange={e => { setVertical(e.target.value); setKeywords(""); }}
+            disabled={running}
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+          >
+            {VERTICALS.map(v => (
+              <option key={v.value} value={v.value}>{v.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Custom keywords */}
+        {vertical === "custom" && (
+          <input
+            type="text"
+            value={keywords}
+            onChange={e => setKeywords(e.target.value)}
+            placeholder="Ключевые слова (займы, вклады, крипта…)"
+            disabled={running}
+            className="flex-1 min-w-[200px] bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors"
+          />
+        )}
+
+        {/* Language override */}
+        <div className="flex items-center gap-1.5">
+          <Globe size={12} className="text-sky-400 shrink-0" />
+          <select
+            value={language}
+            onChange={e => setLanguage(e.target.value)}
+            disabled={running}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+          >
+            <option value="">Язык по GEO</option>
+            <option value="русский">🇷🇺 Русский</option>
+            <option value="украинский">🇺🇦 Украинский</option>
+            <option value="English">🇬🇧 English</option>
+            <option value="español">🇲🇽 Español</option>
+            <option value="português">🇧🇷 Português</option>
+            <option value="Deutsch">🇩🇪 Deutsch</option>
+            <option value="polski">🇵🇱 Polski</option>
+          </select>
+        </div>
       </div>
 
       {/* ── Team lead input ── */}

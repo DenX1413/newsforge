@@ -129,11 +129,18 @@ export async function updateSchedule(geo, data) {
   return res.json();
 }
 
-export async function triggerRun(geo, useMock = false, teamLead = "") {
+export async function triggerRun(geo, useMock = false, teamLead = "", vertical = "", keywords = "", outputLanguage = "") {
   const res = await fetch(`${BASE}/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ geo, use_mock: useMock, team_lead: teamLead }),
+    body: JSON.stringify({
+      geo,
+      use_mock: useMock,
+      team_lead: teamLead,
+      vertical,
+      keywords,
+      output_language: outputLanguage,
+    }),
   });
   return res.json();
 }

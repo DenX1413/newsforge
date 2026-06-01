@@ -17,6 +17,9 @@ DEFAULT_CHANNELS: dict[str, list[str]] = {
     "UA": ["ukraina_novosti", "tipichna_ukraine", "kievreal1"],
     "BY": ["belarusian_silovik", "minskctvby", "belteanews"],
     "KZ": ["tengrinews", "ztb_qaz", "zakonkz"],
+    "IN": ["india_news_today", "thehinduofficial", "ndtvnews"],
+    "BR": ["brasilnoticias", "g1globo", "uolnoticias"],
+    "MX": ["eluniversalmx", "reforma_noticias", "proceso"],
     "PL": ["polsat_news"],
     "DE": ["spiegelnews"],
 }

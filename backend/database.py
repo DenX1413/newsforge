@@ -25,10 +25,13 @@ class Report(Base):
     total_angles  = Column(Integer, default=0)
     total_headlines = Column(Integer, default=0)
     recommendations = Column(Text)   # JSON array — top-5 с обоснованием
-    title         = Column(String(500), default="")   # user-defined report name
-    gdocs_url     = Column(String(500), default="")  # Google Docs export URL
-    is_favorite   = Column(Boolean, default=False)   # ⭐ starred by user
-    data          = Column(Text)     # full JSON blob
+    title           = Column(String(500), default="")   # user-defined report name
+    gdocs_url       = Column(String(500), default="")   # Google Docs export URL
+    is_favorite     = Column(Boolean, default=False)    # ⭐ starred by user
+    data            = Column(Text)                      # full JSON blob
+    vertical        = Column(String(200), default="")   # выбранная вертикаль (финансы / крипто / ...)
+    keywords        = Column(Text, default="")          # свои ключевые слова под вертикаль
+    output_language = Column(String(50), default="")    # язык генерации (русский / español / ...)
 
 
 class NewsItem(Base):
@@ -117,6 +120,9 @@ def _migrate():
         "ALTER TABLE reports ADD COLUMN is_favorite BOOLEAN DEFAULT 0",
         "ALTER TABLE reports ADD COLUMN title VARCHAR(500) DEFAULT ''",
         "ALTER TABLE news_items ADD COLUMN published_at DATETIME",
+        "ALTER TABLE reports ADD COLUMN vertical VARCHAR(200) DEFAULT ''",
+        "ALTER TABLE reports ADD COLUMN keywords TEXT DEFAULT ''",
+        "ALTER TABLE reports ADD COLUMN output_language VARCHAR(50) DEFAULT ''",
     ]
     with engine.connect() as conn:
         for sql in migrations:

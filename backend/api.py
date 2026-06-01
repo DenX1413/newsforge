@@ -61,6 +61,9 @@ class RunRequest(BaseModel):
     geo: str
     use_mock: bool = False
     team_lead: str = ""
+    vertical: str = ""        # вертикаль: "финансы" / "крипто" / "форекс" / ...
+    keywords: str = ""        # свободные ключевые слова под вертикаль
+    output_language: str = "" # язык генерации (если пусто — определяется по GEO)
 
 class FeedbackRequest(BaseModel):
     feedback: int   # -1 | 0 | 1
@@ -155,6 +158,25 @@ def _write_env(updates: dict) -> None:
     load_dotenv(ENV_PATH, override=True)
 
 
+# ── Language mapping ──────────────────────────────────────────────────────────
+
+GEO_LANGUAGE: dict[str, str] = {
+    "RU": "русский",
+    "UA": "украинский",
+    "BY": "белорусский",
+    "KZ": "русский",
+    "IN": "English",
+    "BR": "português",
+    "MX": "español",
+    "PL": "polski",
+    "DE": "Deutsch",
+}
+
+def _resolve_language(geo: str, output_language: str) -> str:
+    """Определяет язык генерации: явный выбор > маппинг по GEO > русский."""
+    return output_language.strip() or GEO_LANGUAGE.get(geo.upper(), "русский")
+
+
 # ── Core pipeline ─────────────────────────────────────────────────────────────
 
 def _get_liked_examples(geo: str, db) -> list:
@@ -170,7 +192,8 @@ def _get_liked_examples(geo: str, db) -> list:
     return [{"angle_title": a.angle_title, "offer_connection": a.offer_connection} for a in liked]
 
 
-def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str = ""):
+def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str = "",
+                       vertical: str = "", keywords: str = "", output_language: str = ""):
     """Full pipeline: parse → classify → angles (with liked examples) → headlines → risks → recs → notify."""
     db = SessionLocal()
     try:
@@ -223,9 +246,16 @@ def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str 
             except Exception as e:
                 print(f"[api] Telegram parser error: {e}")
 
+            lang = _resolve_language(geo, output_language)
             news_items_raw  = processor.classify_news(news_items_raw)
-            angles_raw      = processor.generate_angles(news_items_raw, geo, liked_examples=liked_examples)
-            headlines_raw   = processor.generate_headlines(angles_raw)
+            angles_raw      = processor.generate_angles(
+                news_items_raw, geo,
+                liked_examples=liked_examples,
+                vertical=vertical,
+                keywords=keywords,
+                language=lang,
+            )
+            headlines_raw   = processor.generate_headlines(angles_raw, language=lang)
             risks_raw       = processor.assess_risks(news_items_raw)
             recommendations = processor.generate_recommendations(angles_raw, news_items_raw)
 
@@ -306,6 +336,9 @@ def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str 
         report.total_angles     = len(db_angles)
         report.total_headlines  = len(headlines_raw)
         report.recommendations  = json.dumps(recommendations, ensure_ascii=False, default=str)
+        report.vertical         = vertical or ""
+        report.keywords         = keywords or ""
+        report.output_language  = _resolve_language(geo, output_language)
         report.status           = "done"
         db.commit()
 
@@ -601,8 +634,11 @@ def get_report(report_id: int, db: Session = Depends(get_db)):
         "status": report.status, "team_lead": report.team_lead or "",
         "title": report.title or "",
         "prev_report_id": report.prev_report_id, "coverage_days": 7,
-        "gdocs_url": report.gdocs_url or "",
-        "is_favorite": bool(report.is_favorite),
+        "gdocs_url":       report.gdocs_url or "",
+        "is_favorite":     bool(report.is_favorite),
+        "vertical":        report.vertical or "",
+        "keywords":        report.keywords or "",
+        "output_language": report.output_language or "",
         "stats": {"total_news": report.total_news, "total_angles": report.total_angles,
                   "total_headlines": report.total_headlines},
         "recommendations": recs,
@@ -761,7 +797,10 @@ async def trigger_run(req: RunRequest, background_tasks: BackgroundTasks,
     report = Report(geo=req.geo, status="pending", team_lead=req.team_lead, title=_default_title(req.geo))
     db.add(report); db.commit(); db.refresh(report)
     client_id = f"{req.geo}-{report.id}"
-    background_tasks.add_task(_run_pipeline_sync, report.id, req.geo, req.use_mock, req.team_lead)
+    background_tasks.add_task(
+        _run_pipeline_sync, report.id, req.geo, req.use_mock, req.team_lead,
+        req.vertical, req.keywords, req.output_language,
+    )
     return {"report_id": report.id, "client_id": client_id}
 
 

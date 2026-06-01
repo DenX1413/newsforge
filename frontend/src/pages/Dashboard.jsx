@@ -6,7 +6,7 @@ import SchedulePanel from "../components/SchedulePanel.jsx";
 import { useReports } from "../hooks/useApi.js";
 import { CalendarClock, List, Star, RotateCw } from "lucide-react";
 
-const GEOS = ["Все", "RU", "UA", "BY", "KZ", "DE", "PL"];
+const GEOS = ["Все", "RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"];
 
 export default function Dashboard() {
   const navigate = useNavigate();

@@ -10,7 +10,7 @@ import { useSettings, saveSettings, testNotify } from "../hooks/useApi.js";
 import { GeoFlag } from "../components/ReportCard.jsx";
 import { useTheme } from "../hooks/useTheme.js";
 
-const GEOS_ALL = ["RU", "UA", "BY", "KZ", "DE", "PL"];
+const GEOS_ALL = ["RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"];
 
 function Section({ title, icon: Icon, children, badge }) {
   return (
@@ -135,6 +135,9 @@ export default function SettingsPage() {
     telegram_channels_ru:        "",
     telegram_channels_ua:        "",
     telegram_channels_by:        "",
+    telegram_channels_in:        "",
+    telegram_channels_br:        "",
+    telegram_channels_mx:        "",
   });
   const [selectedGeos, setSelectedGeos] = useState(new Set(["RU", "UA", "BY"]));
 
@@ -189,6 +192,9 @@ export default function SettingsPage() {
       if (!payload.telegram_channels_ru?.trim())    delete payload.telegram_channels_ru;
       if (!payload.telegram_channels_ua?.trim())    delete payload.telegram_channels_ua;
       if (!payload.telegram_channels_by?.trim())    delete payload.telegram_channels_by;
+      if (!payload.telegram_channels_in?.trim())    delete payload.telegram_channels_in;
+      if (!payload.telegram_channels_br?.trim())    delete payload.telegram_channels_br;
+      if (!payload.telegram_channels_mx?.trim())    delete payload.telegram_channels_mx;
       await saveSettings(payload);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -431,9 +437,13 @@ export default function SettingsPage() {
             <span className="text-gray-600 font-normal">(через запятую, без @)</span>
           </p>
           {[
-            ["RU", "telegram_channels_ru", "rian_ru, tass_agency, rbc_news, mash, readovkaru"],
-            ["UA", "telegram_channels_ua", "ukrpravda_news, suspilne_ua, unian_news"],
-            ["BY", "telegram_channels_by", "nexta_tv, zerkalo_io"],
+            ["RU", "telegram_channels_ru", "novosti_russia360, ria_novosti_russya, rossia_now"],
+            ["UA", "telegram_channels_ua", "ukraina_novosti, tipichna_ukraine, kievreal1"],
+            ["BY", "telegram_channels_by", "belarusian_silovik, minskctvby, belteanews"],
+            ["KZ", "telegram_channels_kz", "tengrinews, ztb_qaz, zakonkz"],
+            ["IN", "telegram_channels_in", "india_news_today, thehinduofficial"],
+            ["BR", "telegram_channels_br", "brasilnoticias, g1globo"],
+            ["MX", "telegram_channels_mx", "eluniversalmx, reforma_noticias"],
           ].map(([geo, key, ph]) => (
             <div key={geo} className="flex items-center gap-2">
               <span className="text-xs font-bold text-gray-400 w-8 shrink-0">{geo}</span>

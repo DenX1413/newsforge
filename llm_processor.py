@@ -53,14 +53,24 @@ class LLMProcessor:
         items: List[NewsItem],
         geo: str,
         liked_examples: Optional[List[dict]] = None,
+        vertical: str = "",
+        keywords: str = "",
+        language: str = "русский",
     ) -> List[Angle]:
-        """Sonnet — generate 3 marketing angles per news item.
-        liked_examples: list of {"angle_title", "offer_connection"} from past liked angles.
-        """
+        """Sonnet — generate 3 marketing angles per news item."""
         angles: List[Angle] = []
         angle_id = 1
 
-        # Build "what worked before" block once, reuse in all prompts
+        # Блок вертикали/ключевых слов
+        vertical_block = ""
+        if vertical:
+            vertical_block += f"\nВертикаль/оффер: {vertical}."
+        if keywords:
+            vertical_block += f"\nКлючевые слова вертикали: {keywords}."
+        if vertical_block:
+            vertical_block += "\nГенерируй углы, которые можно связать с этим оффером."
+
+        # Блок удачных примеров
         examples_block = ""
         if liked_examples:
             ex_lines = "\n".join(
@@ -69,8 +79,7 @@ class LLMProcessor:
             )
             examples_block = (
                 f"\n\nПримеры углов, которые ХОРОШО СРАБОТАЛИ ранее для {geo} "
-                f"(команда поставила лайк — используй похожий стиль и тональность):\n"
-                f"{ex_lines}"
+                f"(используй похожий стиль):\n{ex_lines}"
             )
 
         for item in items[:10]:
@@ -78,7 +87,9 @@ class LLMProcessor:
                 f"News ({geo}): \"{item.title}\"\n{item.description[:300]}\n\n"
                 f"Generate exactly 3 marketing angles that connect this news to offers.\n"
                 f"Emotional trigger: {item.emotional_trigger}"
+                f"{vertical_block}"
                 f"{examples_block}\n\n"
+                f"IMPORTANT: Write ALL text (angle_title, offer_connection, target_pain) in {language}.\n\n"
                 f"Return ONLY a JSON array (no markdown):\n"
                 f'[{{"angle_title":"...","offer_connection":"...","target_pain":"...","creative_type":"news|emotional|investigation|personal_story"}}]'
             )
@@ -109,7 +120,7 @@ class LLMProcessor:
 
     # ── SONNET: headlines ─────────────────────────────────────────────────────
 
-    def generate_headlines(self, angles: List[Angle]) -> List[Headline]:
+    def generate_headlines(self, angles: List[Angle], language: str = "русский") -> List[Headline]:
         """Sonnet — generate 4 ad headlines per angle (up to 15 angles)."""
         headlines: List[Headline] = []
 
@@ -120,6 +131,7 @@ class LLMProcessor:
                 f"Audience pain: {angle.target_pain}\n\n"
                 f"Write 4 short ad headlines with FOMO/intrigue. Max 90 chars each.\n"
                 f"Formats: question / shock / number / quote / intrigue\n\n"
+                f"IMPORTANT: Write headlines in {language}.\n\n"
                 f"Return ONLY a JSON array (no markdown):\n"
                 f'[{{"text":"...","format":"question"}}]'
             )

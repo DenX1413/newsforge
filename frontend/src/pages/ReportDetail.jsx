@@ -745,7 +745,7 @@ export default function ReportDetail() {
               </div>
             )}
 
-            {/* GEO / id / teamlead row */}
+            {/* GEO / id / teamlead / vertical / language row */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="flex items-center gap-1.5 text-sm text-gray-500">
                 <GeoFlag geo={report.geo} size={16} /> {report.geo}
@@ -754,6 +754,21 @@ export default function ReportDetail() {
               {report.team_lead && (
                 <span className="text-xs text-gray-600 flex items-center gap-1">
                   <Star size={11} className="text-amber-500" /> {report.team_lead}
+                </span>
+              )}
+              {report.vertical && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/20">
+                  {report.vertical}
+                </span>
+              )}
+              {report.keywords && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  🔑 {report.keywords}
+                </span>
+              )}
+              {report.output_language && (
+                <span className="text-xs text-gray-600">
+                  🌐 {report.output_language}
                 </span>
               )}
             </div>
