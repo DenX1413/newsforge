@@ -125,6 +125,89 @@ export const TRANSLATIONS = {
     "oauth_recommended":  "OAuth (личный аккаунт)",
     "service_account":    "Service Account",
     "drive_folder":       "Drive папка",
+
+    // Settings extra
+    "already_set":        "уже задан",
+    "day_singular":       "день",
+    "days_few_label":     "дня",
+    "days_plural":        "дней",
+    "test_btn":           "Тест",
+
+    // ReportDetail — sections
+    "not_found":          "Отчёт не найден",
+    "news_section":       "Инфоповоды",
+    "angles_section":     "Маркетинговые углы и заголовки",
+    "risks_section":      "Оценка рисков",
+    "prev_section":       "Что зашло в прошлый раз",
+    "no_urgency_items":   "Нет инфоповодов",
+
+    // ReportDetail — labels
+    "offer_label":        "Оффер",
+    "pain_label":         "Боль",
+    "type_label":         "Тип",
+    "rate_label":         "Оценить:",
+    "all_headlines":      "Все заголовки",
+    "search_angles":      "Поиск по углам и заголовкам…",
+    "reset_filter":       "Сбросить",
+    "no_angles_filter":   "Нет углов под текущий фильтр",
+    "top_headlines":      "Топ-заголовки:",
+    "details_btn":        "Подробнее",
+    "collapse_btn":       "Скрыть",
+    "risk_high":          "Высокий",
+    "risk_medium":        "Средний",
+    "risk_low":           "Низкий",
+    "chars_label":        "зн.",
+    "news_stat":          "Новостей",
+    "angles_stat":        "Углов",
+    "headlines_stat":     "Заголовков",
+    "period_meta":        "Период:",
+
+    // Urgency labels
+    "urgent_label":       "Срочно (48ч)",
+    "week_label":         "На неделе",
+    "eternal_label":      "Вечная тема",
+
+    // Trigger labels
+    "trigger_money":      "Деньги",
+    "trigger_crisis":     "Кризис",
+    "trigger_opportunity":"Возможность",
+    "trigger_fear":       "Страх",
+    "trigger_trust":      "Доверие",
+
+    // Category labels
+    "cat_economy":        "Экономика",
+    "cat_politics":       "Политика",
+    "cat_social_media":   "Соцсети",
+    "cat_celebrity":      "Селеба",
+    "cat_scandal":        "Скандал",
+    "cat_banks_taxes":    "Банки/налоги",
+    "cat_fears":          "Страхи",
+
+    // Source type labels
+    "src_top_media":      "Топ СМИ",
+    "src_local_tabloid":  "Таблоид",
+    "src_google_news":    "Google News",
+    "src_twitter_trend":  "Twitter",
+    "src_tiktok":         "TikTok",
+    "src_telegram":       "Telegram",
+    "src_forum":          "Форум",
+
+    // Creative type labels
+    "type_news":          "Новостной",
+    "type_emotional":     "Эмоц.",
+    "type_investigation": "Расследование",
+    "type_personal_story":"Личная ист.",
+
+    // Filter chips
+    "filter_news":        "Новостной",
+    "filter_emotional":   "Эмоц.",
+    "filter_investigation":"Расслед.",
+    "filter_personal":    "История",
+
+    // Rec card
+    "freshness_label":    "Свежесть",
+    "trigger_label":      "Сила триггера",
+    "offer_fit_label":    "Соответствие офферу",
   },
 
   en: {
@@ -251,7 +334,90 @@ export const TRANSLATIONS = {
     "channels_by_geo":    "Channels by GEO",
     "works_without_setup":"Works out of the box — default channels already set",
     "oauth_recommended":  "OAuth (personal account)",
-    "service_account":    "Service Account",
-    "drive_folder":       "Drive folder",
+    "service_account":   "Service Account",
+    "drive_folder":      "Drive folder",
+
+    // Settings extra
+    "already_set":        "already set",
+    "day_singular":       "day",
+    "days_few_label":     "days",
+    "days_plural":        "days",
+    "test_btn":           "Test",
+
+    // ReportDetail — sections
+    "not_found":          "Report not found",
+    "news_section":       "News Items",
+    "angles_section":     "Marketing angles & headlines",
+    "risks_section":      "Risk Assessment",
+    "prev_section":       "What worked last time",
+    "no_urgency_items":   "No items",
+
+    // ReportDetail — labels
+    "offer_label":        "Offer",
+    "pain_label":         "Pain",
+    "type_label":         "Type",
+    "rate_label":         "Rate:",
+    "all_headlines":      "All headlines",
+    "search_angles":      "Search angles and headlines…",
+    "reset_filter":       "Reset",
+    "no_angles_filter":   "No angles match the filter",
+    "top_headlines":      "Top headlines:",
+    "details_btn":        "Details",
+    "collapse_btn":       "Collapse",
+    "risk_high":          "High",
+    "risk_medium":        "Medium",
+    "risk_low":           "Low",
+    "chars_label":        "ch.",
+    "news_stat":          "News",
+    "angles_stat":        "Angles",
+    "headlines_stat":     "Headlines",
+    "period_meta":        "Period:",
+
+    // Urgency labels
+    "urgent_label":       "Urgent (48h)",
+    "week_label":         "This week",
+    "eternal_label":      "Evergreen",
+
+    // Trigger labels
+    "trigger_money":      "Money",
+    "trigger_crisis":     "Crisis",
+    "trigger_opportunity":"Opportunity",
+    "trigger_fear":       "Fear",
+    "trigger_trust":      "Trust",
+
+    // Category labels
+    "cat_economy":        "Economy",
+    "cat_politics":       "Politics",
+    "cat_social_media":   "Social Media",
+    "cat_celebrity":      "Celebrity",
+    "cat_scandal":        "Scandal",
+    "cat_banks_taxes":    "Banks/Taxes",
+    "cat_fears":          "Fears",
+
+    // Source type labels
+    "src_top_media":      "Top Media",
+    "src_local_tabloid":  "Tabloid",
+    "src_google_news":    "Google News",
+    "src_twitter_trend":  "Twitter",
+    "src_tiktok":         "TikTok",
+    "src_telegram":       "Telegram",
+    "src_forum":          "Forum",
+
+    // Creative type labels
+    "type_news":          "News",
+    "type_emotional":     "Emotional",
+    "type_investigation": "Investigation",
+    "type_personal_story":"Personal story",
+
+    // Filter chips
+    "filter_news":        "News",
+    "filter_emotional":   "Emotional",
+    "filter_investigation":"Investigation",
+    "filter_personal":    "Story",
+
+    // Rec card
+    "freshness_label":    "Freshness",
+    "trigger_label":      "Trigger strength",
+    "offer_fit_label":    "Offer fit",
   },
 };

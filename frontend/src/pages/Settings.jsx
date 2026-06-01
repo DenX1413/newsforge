@@ -70,7 +70,7 @@ function StatusDot({ ok, label }) {
   );
 }
 
-function TestResult({ result, channel }) {
+function TestResult({ result, channel, t }) {
   if (!result) return null;
   const ok = result[channel];
   return (
@@ -78,8 +78,8 @@ function TestResult({ result, channel }) {
       ok ? "bg-emerald-950/40 text-emerald-400" : "bg-red-950/40 text-red-400"
     }`}>
       {ok
-        ? <><CheckCircle size={12} /> Отправлено успешно!</>
-        : <><XCircle size={12} /> Ошибка — проверь токен и ID</>}
+        ? <><CheckCircle size={12} /> {t("sent_ok")}</>
+        : <><XCircle size={12} /> {t("sent_fail")}</>}
     </div>
   );
 }
@@ -231,10 +231,10 @@ export default function SettingsPage() {
           <ArrowLeft size={18} />
         </button>
         <h1 className="text-lg font-bold text-white flex items-center gap-2">
-          <Settings size={18} className="text-gray-400" /> Настройки
+          <Settings size={18} className="text-gray-400" /> {t("settings_title")}
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Уведомления, источники и параметры пайплайна
+          {t("settings_subtitle")}
         </p>
       </div>
 
@@ -299,8 +299,8 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Telegram ── */}
-      <Section title="Telegram уведомления" icon={Bell}
-               badge={settings?.telegram_configured ? "подключён" : undefined}>
+      <Section title={t("telegram_section")} icon={Bell}
+               badge={settings?.telegram_configured ? t("connected") : undefined}>
         <div className="flex items-center justify-between">
           <div className="flex gap-3">
             <StatusDot ok={settings?.telegram_configured} label="Bot Token" />
@@ -314,11 +314,11 @@ export default function SettingsPage() {
             {testing === "telegram"
               ? <RotateCw size={12} className="animate-spin" />
               : <Send size={12} />}
-            Тест
+            {t("send_test")}
           </button>
         </div>
 
-        <TestResult result={testResult} channel="telegram" />
+        <TestResult result={testResult} channel="telegram" t={t} />
 
         <Collapsible label="📋 Как подключить Telegram — пошаговая инструкция">
           <GuideStep num="1">
@@ -377,8 +377,8 @@ export default function SettingsPage() {
       </Section>
 
       {/* ── Slack ── */}
-      <Section title="Slack уведомления" icon={Bell}
-               badge={settings?.slack_configured ? "подключён" : undefined}>
+      <Section title={t("slack_section")} icon={Bell}
+               badge={settings?.slack_configured ? t("connected") : undefined}>
         <div className="flex items-center justify-between">
           <div className="flex gap-3">
             <StatusDot ok={settings?.slack_configured} label="Bot Token" />
@@ -392,11 +392,11 @@ export default function SettingsPage() {
             {testing === "slack"
               ? <RotateCw size={12} className="animate-spin" />
               : <Send size={12} />}
-            Тест
+            {t("send_test")}
           </button>
         </div>
 
-        <TestResult result={testResult} channel="slack" />
+        <TestResult result={testResult} channel="slack" t={t} />
 
         <Collapsible label="📋 Как подключить Slack — пошаговая инструкция">
           <GuideStep num="1">
@@ -456,17 +456,17 @@ export default function SettingsPage() {
       </Section>
 
       {/* ── Telegram каналы ── */}
-      <Section title="Telegram-каналы (источник новостей)" icon={Bell} badge="активен">
+      <Section title={t("tg_channels")} icon={Bell} badge={t("active")}>
         <p className="text-xs text-gray-500">
           Автоматически читает публичные Telegram-каналы через RSS — без ключей и авторизации.
           Укажи каналы для нужных GEO или оставь пустым для дефолтных.
         </p>
         <div className="text-xs text-emerald-400 flex items-center gap-1.5">
-          <CheckCircle size={12} /> Работает без настройки — каналы по умолчанию уже заданы
+          <CheckCircle size={12} /> {t("works_without_setup")}
         </div>
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-400">
-            Каналы по GEO{" "}
+            {t("channels_by_geo")}{" "}
             <span className="text-gray-600 font-normal">(через запятую, без @)</span>
           </p>
           {[
@@ -490,7 +490,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* ── Google Docs ── */}
-      <Section title="Google Docs экспорт" icon={FileText}
+      <Section title={t("gdocs_section")} icon={FileText}
                badge={
                  settings?.gdocs_oauth_configured && settings?.gdocs_folder_configured ? "OAuth ✓" :
                  settings?.gdocs_configured && settings?.gdocs_folder_configured ? "SA ✓" :
@@ -500,9 +500,9 @@ export default function SettingsPage() {
         {/* Auth mode status */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-4 flex-wrap">
-            <StatusDot ok={settings?.gdocs_oauth_configured} label="OAuth (личный аккаунт)" />
-            <StatusDot ok={settings?.gdocs_configured}       label="Service Account" />
-            <StatusDot ok={settings?.gdocs_folder_configured} label="Drive папка" />
+            <StatusDot ok={settings?.gdocs_oauth_configured} label={t("oauth_recommended")} />
+            <StatusDot ok={settings?.gdocs_configured}       label={t("service_account")} />
+            <StatusDot ok={settings?.gdocs_folder_configured} label={t("drive_folder")} />
           </div>
           {settings?.gdocs_oauth_configured && settings?.gdocs_folder_configured && (
             <p className="text-xs text-emerald-400">
@@ -632,7 +632,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* ── Pipeline ── */}
-      <Section title="Параметры пайплайна" icon={Globe}>
+      <Section title={t("pipeline_section")} icon={Globe}>
         <Field label="URL приложения"
                hint="Используется в ссылках Telegram/Slack уведомлений. При деплое замени на реальный домен.">
           <div className="relative">
@@ -692,7 +692,7 @@ export default function SettingsPage() {
                 style={{ "--val": form.news_coverage_days }}
               />
               <span className="text-sm font-bold text-white w-16 text-right tabular-nums shrink-0">
-                {form.news_coverage_days} {form.news_coverage_days === 1 ? "день" : form.news_coverage_days < 5 ? "дня" : "дней"}
+                {form.news_coverage_days} {form.news_coverage_days === 1 ? t("day_singular") : form.news_coverage_days < 5 ? t("days_few_label") : t("days_plural")}
               </span>
             </div>
           </div>
@@ -723,11 +723,11 @@ export default function SettingsPage() {
         <StatusDot ok={settings?.anthropic_configured} label="Anthropic API Key" />
         {!settings?.anthropic_configured && (
           <span className="text-xs text-amber-400 flex items-center gap-1">
-            <AlertCircle size={12} /> Добавь ANTHROPIC_API_KEY в .env
+            <AlertCircle size={12} /> {t("add_to_env")}
           </span>
         )}
         {settings?.anthropic_configured && (
-          <span className="text-xs text-gray-600">Ключ задан в .env — не меняется через UI</span>
+          <span className="text-xs text-gray-600">{t("key_in_env")}</span>
         )}
       </div>
 
@@ -745,9 +745,9 @@ export default function SettingsPage() {
           saved ? "bg-emerald-600 hover:bg-emerald-600" : ""
         }`}
       >
-        {saving  ? <><RotateCw size={14} className="animate-spin" /> Сохранение…</> :
-         saved   ? <><CheckCircle size={14} /> Сохранено</> :
-                   <><Save size={14} /> Сохранить настройки</>}
+        {saving  ? <><RotateCw size={14} className="animate-spin" /> {t("saving_btn")}</> :
+         saved   ? <><CheckCircle size={14} /> {t("saved_btn")}</> :
+                   <><Save size={14} /> {t("save_btn")}</>}
       </button>
     </div>
   );

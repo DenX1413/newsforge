@@ -7,7 +7,7 @@ import { useReports } from "../hooks/useApi.js";
 import { useLang } from "../hooks/useLang.js";
 import { CalendarClock, List, Star, RotateCw } from "lucide-react";
 
-const GEOS_FILTER = ["Все", "RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"];
+const GEOS_LIST = ["RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"];
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -26,8 +26,6 @@ export default function Dashboard() {
     refetch();
     if (reportId) navigate(`/report/${reportId}`);
   }
-
-  const ALL_LABEL = t("all_filter");
 
   return (
     <div className="space-y-5">
@@ -65,18 +63,28 @@ export default function Dashboard() {
         {/* GEO + Favourite filter */}
         {tab === "reports" && (
           <div className="flex gap-1 pb-2 flex-wrap">
-            {GEOS_FILTER.map((g) => (
+            <button
+              key="all"
+              onClick={() => { setGeo(null); setOnlyFavorite(false); }}
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 ${
+                !onlyFavorite && geo === null
+                  ? "bg-gray-700 text-white"
+                  : "text-gray-600 hover:text-gray-300"
+              }`}
+            >
+              {t("all_filter")}
+            </button>
+            {GEOS_LIST.map((g) => (
               <button
                 key={g}
-                onClick={() => { setGeo(g === ALL_LABEL || g === "Все" ? null : g); setOnlyFavorite(false); }}
+                onClick={() => { setGeo(g); setOnlyFavorite(false); }}
                 className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 ${
-                  !onlyFavorite && (geo ?? "Все") === g
+                  !onlyFavorite && geo === g
                     ? "bg-gray-700 text-white"
                     : "text-gray-600 hover:text-gray-300"
                 }`}
               >
-                {g !== "Все" && <GeoFlag geo={g} size={14} />}
-                {g === "Все" ? t("all_filter") : g}
+                <GeoFlag geo={g} size={14} /> {g}
               </button>
             ))}
             <div className="w-px bg-gray-800 mx-1" />

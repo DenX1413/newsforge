@@ -8,14 +8,15 @@ import {
 } from "lucide-react";
 import { useReport, setFeedback, deleteReport, toggleFavorite, updateReportTitle } from "../hooks/useApi.js";
 import { GeoFlag } from "../components/ReportCard.jsx";
+import { useLang } from "../hooks/useLang.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const URGENCY = {
-  urgent_48h: { label: "🔥 Срочно (48ч)", cls: "bg-red-500/15 text-red-400 border border-red-500/20" },
-  week:       { label: "⏳ Неделя",        cls: "bg-amber-500/15 text-amber-400 border border-amber-500/20" },
-  eternal:    { label: "♾️ Вечная",        cls: "bg-gray-700/60 text-gray-400 border border-gray-700" },
-};
+const getUrgency = (t) => ({
+  urgent_48h: { label: `🔥 ${t("urgent_label")}`, cls: "bg-red-500/15 text-red-400 border border-red-500/20" },
+  week:       { label: `⏳ ${t("week_label")}`,    cls: "bg-amber-500/15 text-amber-400 border border-amber-500/20" },
+  eternal:    { label: `♾️ ${t("eternal_label")}`, cls: "bg-gray-700/60 text-gray-400 border border-gray-700" },
+});
 const TRIGGER_CLS = {
   money:       "bg-emerald-500/15 text-emerald-400",
   crisis:      "bg-red-500/15 text-red-400",
@@ -23,16 +24,16 @@ const TRIGGER_CLS = {
   fear:        "bg-orange-500/15 text-orange-400",
   trust:       "bg-violet-500/15 text-violet-400",
 };
-const TRIGGER_RU  = { money:"Деньги", crisis:"Кризис", opportunity:"Возможность", fear:"Страх", trust:"Доверие" };
-const CATEGORY_RU = { economy:"Экономика", politics:"Политика", social_media:"Соцсети", celebrity:"Селеба", scandal:"Скандал", banks_taxes:"Банки/налоги", fears:"Страхи" };
+const getTriggerLabels  = (t) => ({ money:t("trigger_money"), crisis:t("trigger_crisis"), opportunity:t("trigger_opportunity"), fear:t("trigger_fear"), trust:t("trigger_trust") });
+const getCategoryLabels = (t) => ({ economy:t("cat_economy"), politics:t("cat_politics"), social_media:t("cat_social_media"), celebrity:t("cat_celebrity"), scandal:t("cat_scandal"), banks_taxes:t("cat_banks_taxes"), fears:t("cat_fears") });
 const PRIORITY_CLS = { A:"bg-emerald-500 text-white", B:"bg-amber-500 text-white", C:"bg-gray-600 text-white" };
-const SOURCE_TYPE_RU = {
-  top_media: "Топ СМИ", local_tabloid: "Таблоид",
-  google_news: "Google News", twitter_trend: "Twitter", tiktok: "TikTok",
-  telegram: "Telegram", forum: "Форум",
-};
+const getSourceLabels = (t) => ({
+  top_media:t("src_top_media"), local_tabloid:t("src_local_tabloid"),
+  google_news:t("src_google_news"), twitter_trend:t("src_twitter_trend"), tiktok:t("src_tiktok"),
+  telegram:t("src_telegram"), forum:t("src_forum"),
+});
 const RISK_CLS = { high: "text-red-400", medium: "text-amber-400", low: "text-emerald-400" };
-const TYPE_RU = { news:"Новостной", emotional:"Эмоц.", investigation:"Расследование", personal_story:"Личная ист." };
+const getTypeLabels = (t) => ({ news:t("type_news"), emotional:t("type_emotional"), investigation:t("type_investigation"), personal_story:t("type_personal_story") });
 
 function fmt(iso) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -184,6 +185,7 @@ function SectionTitle({ icon: Icon, iconCls, children, count }) {
 // ── Block 6: Urgency ──────────────────────────────────────────────────────────
 
 function UrgencyBlock({ news }) {
+  const { t } = useLang();
   const urgent  = news.filter(n => n.urgency === "urgent_48h");
   const week    = news.filter(n => n.urgency === "week");
   const eternal = news.filter(n => n.urgency === "eternal");
@@ -194,7 +196,7 @@ function UrgencyBlock({ news }) {
         {icon} {label} <span className="ml-auto text-lg font-bold text-white">{items.length}</span>
       </p>
       {items.length === 0
-        ? <p className="text-xs text-gray-600">Нет инфоповодов</p>
+        ? <p className="text-xs text-gray-600">{t("no_urgency_items")}</p>
         : <ul className="space-y-1">
             {items.map(n => (
               <li key={n.id} className="flex items-start gap-1.5">
@@ -209,11 +211,11 @@ function UrgencyBlock({ news }) {
 
   return (
     <section className="space-y-3">
-      <SectionTitle icon={Zap} iconCls="text-amber-400">Срочность и актуальность</SectionTitle>
+      <SectionTitle icon={Zap} iconCls="text-amber-400">{t("urgency_title")}</SectionTitle>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Col icon="🔥" label="Срочно (48ч)" items={urgent}  cardCls="bg-red-950/10 border-red-900/30"    titleCls="text-red-400" />
-        <Col icon="⏳" label="На неделе"    items={week}    cardCls="bg-amber-950/10 border-amber-900/30" titleCls="text-amber-400" />
-        <Col icon="♾️" label="Вечная тема"  items={eternal} cardCls=""                                    titleCls="text-gray-400" />
+        <Col icon="🔥" label={t("urgent_label")} items={urgent}  cardCls="bg-red-950/10 border-red-900/30"    titleCls="text-red-400" />
+        <Col icon="⏳" label={t("week_label")}    items={week}    cardCls="bg-amber-950/10 border-amber-900/30" titleCls="text-amber-400" />
+        <Col icon="♾️" label={t("eternal_label")} items={eternal} cardCls=""                                    titleCls="text-gray-400" />
       </div>
     </section>
   );
@@ -222,6 +224,7 @@ function UrgencyBlock({ news }) {
 // ── Block 4: Recommendations ──────────────────────────────────────────────────
 
 function RecommendationCard({ rec, angle }) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   return (
     <div className="card border border-amber-900/30 bg-amber-950/5 space-y-3">
@@ -244,12 +247,12 @@ function RecommendationCard({ rec, angle }) {
 
       <button onClick={() => setOpen(v => !v)} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-400 transition-colors">
         {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        {open ? "Скрыть" : "Подробнее"}
+        {open ? t("collapse_btn") : t("details_btn")}
       </button>
 
       {open && (
         <div className="pt-2 border-t border-gray-800 grid grid-cols-3 gap-3 text-xs">
-          {[["Свежесть", rec.freshness], ["Сила триггера", rec.trigger_strength], ["Соответствие офферу", rec.offer_fit]].map(([k, v]) => (
+          {[[t("freshness_label"), rec.freshness], [t("trigger_label"), rec.trigger_strength], [t("offer_fit_label"), rec.offer_fit]].map(([k, v]) => (
             <div key={k}>
               <p className="text-gray-600 uppercase tracking-wider text-[10px] mb-1">{k}</p>
               <p className="text-gray-300">{v}</p>
@@ -260,11 +263,11 @@ function RecommendationCard({ rec, angle }) {
 
       {angle?.headlines?.length > 0 && (
         <div className="pt-2 border-t border-gray-800 space-y-1">
-          <p className="text-[10px] text-gray-600 uppercase tracking-wider">Топ-заголовки:</p>
+          <p className="text-[10px] text-gray-600 uppercase tracking-wider">{t("top_headlines")}</p>
           {angle.headlines.slice(0, 3).map(h => (
             <div key={h.id} className="flex items-center gap-2 bg-gray-800/50 rounded px-2.5 py-1">
               <span className="flex-1 text-xs text-gray-300">{h.text}</span>
-              <span className="text-[10px] text-gray-600 shrink-0">{h.character_count} зн.</span>
+              <span className="text-[10px] text-gray-600 shrink-0">{h.character_count} {t("chars_label")}</span>
               <CopyBtn text={h.text} small />
             </div>
           ))}
@@ -287,11 +290,16 @@ function fmtNewsDate(iso) {
 }
 
 function NewsSection({ items }) {
+  const { t } = useLang();
+  const URGENCY = getUrgency(t);
+  const TRIGGER_LABELS  = getTriggerLabels(t);
+  const CATEGORY_LABELS = getCategoryLabels(t);
+  const SOURCE_LABELS   = getSourceLabels(t);
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? items : items.slice(0, 8);
   return (
     <section className="space-y-3">
-      <SectionTitle icon={Newspaper} count={items.length}>Инфоповоды</SectionTitle>
+      <SectionTitle icon={Newspaper} count={items.length}>{t("news_section")}</SectionTitle>
       <div className="grid gap-3 sm:grid-cols-2">
         {visible.map(n => {
           const urg     = URGENCY[n.urgency] ?? URGENCY.eternal;
@@ -316,7 +324,7 @@ function NewsSection({ items }) {
               <div className="flex items-center gap-2 text-[11px] text-gray-600">
                 <span className="font-medium text-gray-500">{n.source}</span>
                 <span className="text-gray-700">·</span>
-                <span className="uppercase tracking-wide text-[10px]">{SOURCE_TYPE_RU[n.source_type] ?? n.source_type}</span>
+                <span className="uppercase tracking-wide text-[10px]">{SOURCE_LABELS[n.source_type] ?? n.source_type}</span>
                 {dateStr && (
                   <>
                     <span className="text-gray-700">·</span>
@@ -331,9 +339,9 @@ function NewsSection({ items }) {
               <div className="flex flex-wrap gap-1.5">
                 <span className={`badge ${urg.cls}`}>{urg.label}</span>
                 <span className={`badge ${TRIGGER_CLS[n.emotional_trigger] ?? "bg-gray-700 text-gray-400"}`}>
-                  {TRIGGER_RU[n.emotional_trigger] ?? n.emotional_trigger}
+                  {TRIGGER_LABELS[n.emotional_trigger] ?? n.emotional_trigger}
                 </span>
-                <span className="badge bg-gray-800 text-gray-400">{CATEGORY_RU[n.category] ?? n.category}</span>
+                <span className="badge bg-gray-800 text-gray-400">{CATEGORY_LABELS[n.category] ?? n.category}</span>
               </div>
             </div>
           );
@@ -341,7 +349,7 @@ function NewsSection({ items }) {
       </div>
       {items.length > 8 && (
         <button onClick={() => setShowAll(v => !v)} className="btn-ghost w-full text-center text-sm py-2">
-          {showAll ? "Скрыть" : `Показать ещё ${items.length - 8}`}
+          {showAll ? t("show_less") : `${t("show_more")} ${items.length - 8}`}
         </button>
       )}
     </section>
@@ -351,6 +359,8 @@ function NewsSection({ items }) {
 // ── Angle card ────────────────────────────────────────────────────────────────
 
 function AngleCard({ angle }) {
+  const { t } = useLang();
+  const TYPE_LABELS = getTypeLabels(t);
   const [fb, setFb] = useState(angle.feedback ?? 0);
   const vote = async (val) => {
     const next = fb === val ? 0 : val;
@@ -360,9 +370,9 @@ function AngleCard({ angle }) {
 
   const copyText = [
     `[${angle.priority}] ${angle.angle_title}`,
-    `Оффер: ${angle.offer_connection}`,
-    `Боль: ${angle.target_pain}`,
-    `Тип: ${TYPE_RU[angle.creative_type] ?? angle.creative_type}`,
+    `${t("offer_label")}: ${angle.offer_connection}`,
+    `${t("pain_label")}: ${angle.target_pain}`,
+    `${t("type_label")}: ${TYPE_LABELS[angle.creative_type] ?? angle.creative_type}`,
     "",
     ...(angle.headlines ?? []).map(h => `• ${h.text}`),
   ].join("\n");
@@ -385,21 +395,21 @@ function AngleCard({ angle }) {
       )}
 
       <div className="space-y-1 text-xs text-gray-500">
-        <p><span className="text-gray-600">Оффер:</span> {angle.offer_connection}</p>
-        <p><span className="text-gray-600">Боль:</span> {angle.target_pain}</p>
-        <p><span className="text-gray-600">Тип:</span> {TYPE_RU[angle.creative_type] ?? angle.creative_type}</p>
+        <p><span className="text-gray-600">{t("offer_label")}:</span> {angle.offer_connection}</p>
+        <p><span className="text-gray-600">{t("pain_label")}:</span> {angle.target_pain}</p>
+        <p><span className="text-gray-600">{t("type_label")}:</span> {TYPE_LABELS[angle.creative_type] ?? angle.creative_type}</p>
       </div>
 
       {angle.headlines?.length > 0 && (
         <div className="space-y-1.5 pt-1 border-t border-gray-800">
           <p className="text-[10px] font-medium text-gray-600 uppercase tracking-wider flex items-center gap-1">
-            <Type size={10} /> Заголовки ({angle.headlines.length})
+            <Type size={10} /> {t("headlines_label")} ({angle.headlines.length})
           </p>
           {angle.headlines.map(h => (
             <div key={h.id} className="flex items-center gap-2 bg-gray-800/60 rounded-lg px-3 py-1.5">
               <span className="flex-1 text-xs text-gray-300">{h.text}</span>
               <span className="text-[10px] text-gray-700 shrink-0">{h.format}</span>
-              <span className="text-[10px] text-gray-600 shrink-0">{h.character_count} зн.</span>
+              <span className="text-[10px] text-gray-600 shrink-0">{h.character_count} {t("chars_label")}</span>
               <CopyBtn text={h.text} small />
             </div>
           ))}
@@ -407,7 +417,7 @@ function AngleCard({ angle }) {
       )}
 
       <div className="flex items-center gap-2 pt-1 border-t border-gray-800">
-        <span className="text-xs text-gray-600">Оценить:</span>
+        <span className="text-xs text-gray-600">{t("rate_label")}</span>
         <button onClick={() => vote(1)}  className={`btn-ghost p-1.5 ${fb === 1  ? "text-emerald-400" : ""}`}><ThumbsUp   size={14} /></button>
         <button onClick={() => vote(-1)} className={`btn-ghost p-1.5 ${fb === -1 ? "text-red-400"     : ""}`}><ThumbsDown size={14} /></button>
       </div>
@@ -418,6 +428,7 @@ function AngleCard({ angle }) {
 // ── Angles section with filter + search ───────────────────────────────────────
 
 function AnglesSection({ angles }) {
+  const { t } = useLang();
   const [search,    setSearch]    = useState("");
   const [fPriority, setFPriority] = useState(null);
   const [fType,     setFType]     = useState(null);
@@ -458,15 +469,15 @@ function AnglesSection({ angles }) {
     <section className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <SectionTitle icon={Lightbulb} count={filtered.length !== angles.length ? `${filtered.length}/${angles.length}` : angles.length}>
-          Маркетинговые углы и заголовки
+          {t("angles_section")}
         </SectionTitle>
         {/* Copy all headlines */}
         <button
           onClick={() => navigator.clipboard.writeText(allHeadlines)}
           className="btn-ghost py-1 px-2.5 text-xs flex items-center gap-1.5"
-          title="Скопировать все заголовки"
+          title={t("all_headlines")}
         >
-          <Copy size={11} /> Все заголовки
+          <Copy size={11} /> {t("all_headlines")}
         </button>
       </div>
 
@@ -478,7 +489,7 @@ function AnglesSection({ angles }) {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Поиск по углам и заголовкам…"
+            placeholder={t("search_angles")}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors"
           />
           {search && (
@@ -498,8 +509,8 @@ function AnglesSection({ angles }) {
         {/* Type filter */}
         <div className="flex gap-1">
           {[
-            ["news","Новостной"], ["emotional","Эмоц."],
-            ["investigation","Расслед."], ["personal_story","История"],
+            ["news", t("filter_news")], ["emotional", t("filter_emotional")],
+            ["investigation", t("filter_investigation")], ["personal_story", t("filter_personal")],
           ].map(([v, l]) => (
             <Chip key={v} label={l} active={fType === v} onClick={() => setFType(fType === v ? null : v)} />
           ))}
@@ -509,7 +520,7 @@ function AnglesSection({ angles }) {
         {hasFilter && (
           <button onClick={() => { setSearch(""); setFPriority(null); setFType(null); }}
             className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1">
-            <X size={11} /> Сбросить
+            <X size={11} /> {t("reset_filter")}
           </button>
         )}
       </div>
@@ -517,7 +528,7 @@ function AnglesSection({ angles }) {
       {filtered.length === 0 ? (
         <div className="card text-center py-8 text-gray-600 text-sm">
           <Filter size={20} className="mx-auto mb-2 text-gray-700" />
-          Нет углов под текущий фильтр
+          {t("no_angles_filter")}
         </div>
       ) : (
         <>
@@ -526,7 +537,7 @@ function AnglesSection({ angles }) {
           </div>
           {filtered.length > 6 && (
             <button onClick={() => setShowAll(v => !v)} className="btn-ghost w-full text-center text-sm py-2">
-              {showAll ? "Скрыть" : `Показать ещё ${filtered.length - 6}`}
+              {showAll ? t("show_less") : `${t("show_more")} ${filtered.length - 6}`}
             </button>
           )}
         </>
@@ -538,10 +549,11 @@ function AnglesSection({ angles }) {
 // ── Block 5: Risks ────────────────────────────────────────────────────────────
 
 function RisksSection({ risks }) {
+  const { t } = useLang();
   if (!risks?.length) return null;
   return (
     <section className="space-y-3">
-      <SectionTitle icon={Shield} iconCls="text-red-400" count={risks.length}>Оценка рисков</SectionTitle>
+      <SectionTitle icon={Shield} iconCls="text-red-400" count={risks.length}>{t("risks_section")}</SectionTitle>
       <div className="grid gap-3 sm:grid-cols-2">
         {risks.map((r, i) => (
           <div key={i} className="card space-y-2.5 border border-red-900/20">
@@ -551,11 +563,11 @@ function RisksSection({ risks }) {
               </p>
             )}
             <div className="grid grid-cols-3 gap-2 text-xs">
-              {[["Бан", r.platform_ban_risk], ["Негатив", r.audience_negativity_risk], ["Репутация", r.reputation_risk]].map(([l, v]) => (
+              {[[t("ban_risk"), r.platform_ban_risk], [t("negativity_risk"), r.audience_negativity_risk], [t("reputation_risk"), r.reputation_risk]].map(([l, v]) => (
                 <div key={l}>
                   <p className="text-gray-600 text-[10px]">{l}</p>
                   <p className={`font-medium ${RISK_CLS[v] ?? "text-gray-400"}`}>
-                    {v === "high" ? "Высокий" : v === "medium" ? "Средний" : "Низкий"}
+                    {v === "high" ? t("risk_high") : v === "medium" ? t("risk_medium") : t("risk_low")}
                   </p>
                 </div>
               ))}
@@ -569,7 +581,7 @@ function RisksSection({ risks }) {
                 ))}
               </ul>
             )}
-            <p className="text-[10px] text-gray-600">Срок: <span className="text-gray-400">{r.expiry_date}</span></p>
+            <p className="text-[10px] text-gray-600">{t("expires")}: <span className="text-gray-400">{r.expiry_date}</span></p>
           </div>
         ))}
       </div>
@@ -580,11 +592,12 @@ function RisksSection({ risks }) {
 // ── Prev performance ──────────────────────────────────────────────────────────
 
 function PrevPerformance({ prev, prevReportId }) {
+  const { t } = useLang();
   if (!prev?.count) return null;
   return (
     <section className="space-y-3">
       <SectionTitle icon={History} iconCls="text-violet-400" count={prev.count}>
-        Что зашло в прошлый раз
+        {t("prev_section")}
         {prevReportId && (
           <Link to={`/report/${prevReportId}`}
             className="ml-2 text-xs text-gray-600 hover:text-sky-400 transition-colors font-normal normal-case tracking-normal">
@@ -610,6 +623,7 @@ function PrevPerformance({ prev, prevReportId }) {
 export default function ReportDetail() {
   const { id }    = useParams();
   const navigate  = useNavigate();
+  const { t }     = useLang();
   const { report, loading } = useReport(id);
   const [copied,        setCopied]        = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -634,7 +648,7 @@ export default function ReportDetail() {
       {[1,2,3].map(i => <div key={i} className="card animate-pulse h-32 bg-gray-800/50" />)}
     </div>
   );
-  if (!report) return <div className="p-6 text-gray-500">Отчёт не найден</div>;
+  if (!report) return <div className="p-6 text-gray-500">{t("not_found")}</div>;
 
   const angleById = Object.fromEntries(report.angles.map(a => [a.id, a]));
 
@@ -707,7 +721,7 @@ export default function ReportDetail() {
       <div className="card space-y-4">
         <div className="flex items-start gap-3 flex-wrap">
           <button onClick={() => navigate(-1)} className="btn-ghost flex items-center gap-1.5 py-1.5 -ml-1 text-sm shrink-0">
-            <ArrowLeft size={14} /> Назад
+            <ArrowLeft size={14} /> {t("back")}
           </button>
 
           <div className="flex-1 min-w-0">
@@ -775,11 +789,11 @@ export default function ReportDetail() {
 
             <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
               <span className="flex items-center gap-1"><Clock size={11} /> {fmt(report.created_at)}</span>
-              <span className="flex items-center gap-1"><Newspaper size={11} className="text-gray-700" /> Период: {report.coverage_days ?? 7} дней</span>
+              <span className="flex items-center gap-1"><Newspaper size={11} className="text-gray-700" /> {t("period_meta")} {report.coverage_days ?? 7} {t("days")}</span>
               {report.prev_report_id && (
                 <Link to={`/report/${report.prev_report_id}`}
                   className="flex items-center gap-1 hover:text-sky-400 transition-colors">
-                  <History size={11} /> Предыдущий #{report.prev_report_id}
+                  <History size={11} /> {t("prev_label")} #{report.prev_report_id}
                 </Link>
               )}
             </div>
@@ -788,9 +802,9 @@ export default function ReportDetail() {
           {/* Stats + export */}
           <div className="flex items-center gap-4 flex-wrap">
             {[
-              { label:"Новостей",   value:report.stats.total_news,      Icon:Newspaper },
-              { label:"Углов",      value:report.stats.total_angles,    Icon:Lightbulb },
-              { label:"Заголовков", value:report.stats.total_headlines, Icon:Type },
+              { label:t("news_stat"),      value:report.stats.total_news,      Icon:Newspaper },
+              { label:t("angles_stat"),    value:report.stats.total_angles,    Icon:Lightbulb },
+              { label:t("headlines_stat"), value:report.stats.total_headlines, Icon:Type },
             ].map(({ label, value, Icon }) => (
               <div key={label} className="text-center">
                 <p className="text-lg font-bold text-white tabular-nums">{value}</p>
@@ -807,19 +821,19 @@ export default function ReportDetail() {
                 className={`btn-ghost py-1.5 px-2.5 flex items-center gap-1.5 text-xs transition-colors ${
                   favorite ? "text-amber-400 hover:text-amber-300" : "hover:text-amber-400"
                 }`}
-                title={favorite ? "Убрать из избранного" : "Добавить в избранное"}
+                title={favorite ? t("to_favorite") : t("to_favorite")}
               >
                 <Star size={13} fill={favorite ? "currentColor" : "none"} />
-                {favorite ? "Избранное" : "В избранное"}
+                {t("to_favorite")}
               </button>
 
               <button
                 onClick={handleCopyAll}
                 className="btn-ghost py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
-                title="Скопировать текст отчёта"
+                title={t("copy")}
               >
                 {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                {copied ? "Скопировано" : "Копировать"}
+                {copied ? t("copied") : t("copy")}
               </button>
 
               <button
@@ -861,19 +875,19 @@ export default function ReportDetail() {
                 </button>
               ) : (
                 <div className="flex items-center gap-1.5 border border-red-900/40 rounded-lg px-2 py-1">
-                  <span className="text-xs text-gray-400">Удалить?</span>
+                  <span className="text-xs text-gray-400">{t("delete_confirm")}</span>
                   <button
                     onClick={handleDelete}
                     disabled={deleting}
                     className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium"
                   >
-                    {deleting ? "…" : "Да"}
+                    {deleting ? "…" : t("yes")}
                   </button>
                   <button
                     onClick={() => setConfirmDelete(false)}
                     className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 hover:bg-sky-500/15 hover:text-sky-400"
                   >
-                    Нет
+                    {t("no")}
                   </button>
                 </div>
               )}
@@ -892,7 +906,7 @@ export default function ReportDetail() {
       {report.recommendations?.length > 0 && (
         <section className="space-y-3">
           <SectionTitle icon={TrendingUp} iconCls="text-amber-400" count={report.recommendations.length}>
-            Рекомендации к тесту
+            {t("recs_block")}
           </SectionTitle>
           <div className="grid gap-3 sm:grid-cols-2">
             {report.recommendations.map(rec => (

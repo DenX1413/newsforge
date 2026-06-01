@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Play, FlaskConical, User, ChevronDown, CheckCheck, Globe, Tag } from "lucide-react";
 import { triggerRun } from "../hooks/useApi.js";
 import { GeoFlag } from "./ReportCard.jsx";
+import { useLang } from "../hooks/useLang.js";
 
 const GEOS = ["RU", "UA", "BY", "KZ", "IN", "BR", "MX", "DE", "PL"];
 
@@ -23,20 +24,22 @@ const GEO_LANG = {
   MX: "español", DE: "Deutsch", PL: "polski",
 };
 
-const VERTICALS = [
-  { value: "",          label: "Без вертикали" },
-  { value: "финансы",   label: "💰 Финансы / инвестиции" },
-  { value: "крипто",    label: "₿ Крипто / блокчейн" },
-  { value: "форекс",    label: "📈 Форекс / трейдинг" },
-  { value: "займы",     label: "🏦 Займы / кредиты" },
-  { value: "e-commerce",label: "🛒 E-commerce" },
-  { value: "образование",label: "🎓 Образование" },
-  { value: "недвижимость",label: "🏠 Недвижимость" },
-  { value: "гемблинг",  label: "🎰 Гемблинг / ставки" },
-  { value: "custom",    label: "✏️ Свои ключевые слова" },
-];
-
 export default function RunPanel({ onDone }) {
+  const { t } = useLang();
+
+  const VERTICALS = [
+    { value: "",              label: t("no_vertical") },
+    { value: "финансы",       label: "💰 Финансы / инвестиции" },
+    { value: "крипто",        label: "₿ Крипто / блокчейн" },
+    { value: "форекс",        label: "📈 Форекс / трейдинг" },
+    { value: "займы",         label: "🏦 Займы / кредиты" },
+    { value: "e-commerce",    label: "🛒 E-commerce" },
+    { value: "образование",   label: "🎓 Образование" },
+    { value: "недвижимость",  label: "🏠 Недвижимость" },
+    { value: "гемблинг",      label: "🎰 Гемблинг / ставки" },
+    { value: "custom",        label: t("custom_keywords") },
+  ];
+
   const [selected, setSelected]   = useState(new Set(["RU"]));
   const [useMock, setUseMock]     = useState(false);
   const [teamLead, setTeamLead]   = useState("");
@@ -69,7 +72,7 @@ export default function RunPanel({ onDone }) {
   const runSingle = useCallback(async (geo) => {
     setError(null);
     setRunning(true);
-    setProgress({ pct: 5, message: "Инициализация…" });
+    setProgress({ pct: 5, message: `${t("running_btn")}` });
 
     const vert = vertical === "custom" ? "" : vertical;
     const kw   = vertical === "custom" ? keywords : "";
@@ -77,12 +80,12 @@ export default function RunPanel({ onDone }) {
     const { report_id } = await triggerRun(geo, useMock, teamLead, vert, kw, lang);
 
     const STEPS = [
-      "Парсинг RSS и Google News…",
-      "Классификация статей (Haiku)…",
-      "Генерация углов (Sonnet)…",
-      "Генерация заголовков (Sonnet)…",
-      "Оценка рисков и рекомендации…",
-      "Формирование отчёта…",
+      "RSS & Google News…",
+      "Haiku…",
+      "Sonnet angles…",
+      "Sonnet headlines…",
+      "Risks & recs…",
+      "Report…",
     ];
     let stepIdx = 0;
     let pct = 10;
@@ -94,14 +97,14 @@ export default function RunPanel({ onDone }) {
 
         if (data.status === "done") {
           clearInterval(poll);
-          setProgress({ pct: 100, message: "Готово!" });
+          setProgress({ pct: 100, message: t("report_ready") });
           setRunning(false);
           onDone?.(report_id);
           return;
         }
         if (data.status === "error") {
           clearInterval(poll);
-          setError("Ошибка — смотри логи бэкенда");
+          setError(t("status_error"));
           setRunning(false);
           return;
         }
@@ -120,7 +123,7 @@ export default function RunPanel({ onDone }) {
     setError(null);
     setRunning(true);
     setMultiDone(null);
-    setProgress({ pct: 0, message: `Запускаю ${geoList.join(", ")}…` });
+    setProgress({ pct: 0, message: `${t("launched")} ${geoList.join(", ")}…` });
 
     const ids = [];
     for (const g of geoList) {
@@ -136,8 +139,8 @@ export default function RunPanel({ onDone }) {
       }
     }
 
-    setProgress({ pct: 100, message: `Запущено ${ids.length} задач` });
-    setMultiDone(`🚀 Запущено ${ids.length} задач — следите во вкладке «Отчёты»`);
+    setProgress({ pct: 100, message: `${t("launched")} ${ids.length}` });
+    setMultiDone(`${t("launched")} ${ids.length} ${t("tasks_launched")}`);
     setRunning(false);
     onDone?.();           // refresh reports list (no specific report_id)
   }, [geoList, useMock, teamLead, onDone]);
@@ -148,10 +151,10 @@ export default function RunPanel({ onDone }) {
   };
 
   const btnLabel = running
-    ? "Работает…"
+    ? t("running_btn")
     : isSingle
-    ? `Запустить ${geoList[0]}`
-    : `Запустить ${geoList.length} GEO`;
+    ? `${t("run_btn")} ${geoList[0]}`
+    : `${t("run_btn")} ${geoList.length} GEO`;
 
   return (
     <div className="card space-y-3">
@@ -181,9 +184,9 @@ export default function RunPanel({ onDone }) {
           onClick={() => setSelected(new Set(GEOS))}
           disabled={running || selected.size === GEOS.length}
           className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-30 flex items-center gap-1"
-          title="Выбрать все GEO"
+          title={t("all_filter")}
         >
-          <CheckCheck size={12} /> Все
+          <CheckCheck size={12} /> {t("all_filter")}
         </button>
 
         <div className="flex-1" />
@@ -244,7 +247,7 @@ export default function RunPanel({ onDone }) {
             type="text"
             value={keywords}
             onChange={e => setKeywords(e.target.value)}
-            placeholder="Ключевые слова (займы, вклады, крипта…)"
+            placeholder={t("keywords_placeholder")}
             disabled={running}
             className="flex-1 min-w-[200px] bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors"
           />
@@ -259,7 +262,7 @@ export default function RunPanel({ onDone }) {
             disabled={running}
             className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
           >
-            <option value="">Язык по GEO</option>
+            <option value="">{t("lang_by_geo")}</option>
             <option value="русский">🇷🇺 Русский</option>
             <option value="украинский">🇺🇦 Украинский</option>
             <option value="English">🇬🇧 English</option>
@@ -279,7 +282,7 @@ export default function RunPanel({ onDone }) {
             type="text"
             value={teamLead}
             onChange={e => setTeamLead(e.target.value)}
-            placeholder="Имя тимлида (для уведомления)"
+            placeholder={t("teamlead_placeholder")}
             className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-sky-500 transition-colors"
           />
         </div>
@@ -303,7 +306,7 @@ export default function RunPanel({ onDone }) {
 
       {/* ── Success states ── */}
       {!running && progress?.pct === 100 && !multiDone && (
-        <p className="text-xs text-emerald-400 pt-1 border-t border-gray-800">✓ Отчёт готов</p>
+        <p className="text-xs text-emerald-400 pt-1 border-t border-gray-800">{t("report_ready")}</p>
       )}
       {multiDone && (
         <p className="text-xs text-sky-400 pt-1 border-t border-gray-800">{multiDone}</p>
