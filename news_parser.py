@@ -38,11 +38,27 @@ class NewsParser:
         ],
         "DE": [
             ("Deutsche Welle", "https://rss.dw.com/rdf/rss-de-all",        "top_media"),
-            ("DW Russian",     "https://rss.dw.com/rdf/rss-ru-all",        "top_media"),
+            ("Spiegel Online", "https://www.spiegel.de/schlagzeilen/index.rss", "top_media"),
         ],
         "PL": [
-            ("Deutsche Welle", "https://rss.dw.com/rdf/rss-de-all",        "top_media"),
-            ("DW Russian",     "https://rss.dw.com/rdf/rss-ru-all",        "top_media"),
+            ("TVN24",          "https://tvn24.pl/najnowsze.xml",            "top_media"),
+            ("Onet",           "https://wiadomosci.onet.pl/.feed",          "top_media"),
+        ],
+        "IN": [
+            ("NDTV",           "https://feeds.feedburner.com/ndtvnews-top-stories", "top_media"),
+            ("The Hindu",      "https://www.thehindu.com/news/feeder/default.rss",  "top_media"),
+            ("Times of India", "https://timesofindia.indiatimes.com/rssfeedstopstories.cms", "top_media"),
+            ("Economic Times", "https://economictimes.indiatimes.com/rssfeedstopstories.cms", "top_media"),
+        ],
+        "BR": [
+            ("G1 Globo",       "https://g1.globo.com/rss/g1/",              "top_media"),
+            ("UOL",            "https://rss.uol.com.br/feed/noticias.xml",  "top_media"),
+            ("Folha",          "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml", "top_media"),
+        ],
+        "MX": [
+            ("El Universal",   "https://www.eluniversal.com.mx/rss.xml",   "top_media"),
+            ("Milenio",        "https://www.milenio.com/rss",               "top_media"),
+            ("Proceso",        "https://www.proceso.com.mx/rss/",           "top_media"),
         ],
     }
 
@@ -54,6 +70,9 @@ class NewsParser:
         "KZ": [("ru", "KZ", "казахстан экономика тенге"), ("ru", "KZ", "казахстан банки цены")],
         "DE": [("de", "DE", "wirtschaft finanzen deutschland"), ("de", "DE", "krise inflation gehalt")],
         "PL": [("pl", "PL", "gospodarka finanse polska"), ("pl", "PL", "kryzys inflacja zarobki")],
+        "IN": [("en", "IN", "india economy finance"), ("en", "IN", "india market banking money")],
+        "BR": [("pt-BR", "BR", "economia brasil finanças"), ("pt-BR", "BR", "brasil banco juros renda")],
+        "MX": [("es-419", "MX", "economía méxico finanzas"), ("es-419", "MX", "méxico banco dinero crisis")],
     }
 
     def _parse_date(self, entry) -> datetime:
