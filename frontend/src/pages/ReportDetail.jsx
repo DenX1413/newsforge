@@ -792,6 +792,16 @@ export default function ReportDetail() {
                 </a>
               )}
 
+              <a
+                href={`/api/reports/${report.id}/html`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-ghost py-1.5 px-2.5 flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300"
+                title="Открыть HTML-дайджест"
+              >
+                <ExternalLink size={13} /> HTML
+              </a>
+
               {/* Delete */}
               {!confirmDelete ? (
                 <button

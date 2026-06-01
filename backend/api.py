@@ -984,6 +984,28 @@ def export_docx(report_id: int, db: Session = Depends(get_db)):
     )
 
 
+# ── Routes: HTML export ──────────────────────────────────────────────────────
+
+@app.get("/api/reports/{report_id}/html")
+def export_html(report_id: int, db: Session = Depends(get_db)):
+    """Return the report as a self-contained styled HTML page."""
+    from fastapi.responses import HTMLResponse
+    import sys, os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    from html_exporter import generate_html
+
+    # Reuse the same data assembly as get_report()
+    report_data = get_report(report_id, db)
+    html_content = generate_html(report_data)
+
+    geo_safe  = (report_data.get("geo") or "report").upper()
+    filename  = f"newsforge-{geo_safe}-{report_id}.html"
+    return HTMLResponse(
+        content=html_content,
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
 # ── Routes: settings ─────────────────────────────────────────────────────────
 
 @app.get("/api/settings")
