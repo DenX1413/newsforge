@@ -49,3 +49,15 @@ PRIORITY_LEVELS = ["A", "B", "C"]
 
 # Urgency types
 URGENCY_TYPES = ["urgent_48h", "week", "eternal"]
+
+
+def validate_config():
+    """Call this at app startup to catch missing required env vars early."""
+    missing = []
+    if not ANTHROPIC_API_KEY:
+        missing.append("ANTHROPIC_API_KEY")
+    if missing:
+        raise EnvironmentError(
+            f"Missing required environment variables: {', '.join(missing)}. "
+            f"Check your .env file."
+        )

@@ -12,7 +12,10 @@ from config import NEWS_COVERAGE_DAYS
 class NewsParser:
     def __init__(self):
         self.coverage_days = NEWS_COVERAGE_DAYS
-        self.cutoff_date = datetime.now() - timedelta(days=self.coverage_days)
+
+    @property
+    def cutoff_date(self):
+        return datetime.now() - timedelta(days=self.coverage_days)
 
     # ── RSS feeds ─────────────────────────────────────────────────────────────
     RSS_FEEDS = {

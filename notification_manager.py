@@ -23,11 +23,12 @@ class NotificationManager:
                 },
             )
 
-            if response.status_code == 200:
+            result = response.json()
+            if response.status_code == 200 and result.get("ok"):
                 print("✅ Slack notification sent")
                 return True
             else:
-                print(f"❌ Slack error: {response.text}")
+                print(f"❌ Slack error: {result.get('error', response.text)}")
                 return False
 
         except Exception as e:

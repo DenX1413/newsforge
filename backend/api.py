@@ -1,6 +1,7 @@
 import sys, os, re
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+import hashlib
 import json
 import asyncio
 from datetime import datetime, timedelta
@@ -100,6 +101,8 @@ class SettingsPayload(BaseModel):
 
 @app.on_event("startup")
 def startup():
+    from config import validate_config
+    validate_config()
     init_db()
     _load_schedules()
 
@@ -287,7 +290,7 @@ def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str 
             db_news.append(n)
         db.flush()
 
-        hash_to_db_id = {str(hash(item.title)): db_news[i].id for i, item in enumerate(news_items_raw)}
+        hash_to_db_id = {hashlib.md5(item.title.encode()).hexdigest(): db_news[i].id for i, item in enumerate(news_items_raw)}
 
         # Save angles
         db_angles: list = []
@@ -361,7 +364,7 @@ def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str 
                     headline_map.setdefault(da_id, []).append({"text": h.text, "format": h.format})
 
             # Build news_id → db_news mapping for risks
-            hash_to_news = {str(hash(item.title)): item for item in news_items_raw}
+            hash_to_news = {hashlib.md5(item.title.encode()).hexdigest(): item for item in news_items_raw}
 
             # Liked angles from previous report
             prev_liked = []
@@ -399,7 +402,7 @@ def _run_pipeline_sync(report_id: int, geo: str, use_mock: bool, team_lead: str 
             db.commit()
 
             # Angles with news title
-            news_id_to_item = {str(hash(item.title)): item for item in news_items_raw}
+            news_id_to_item = {hashlib.md5(item.title.encode()).hexdigest(): item for item in news_items_raw}
             angle_to_news: dict = {}
             for a_raw in angles_raw:
                 angle_to_news[a_raw.id] = news_id_to_item.get(a_raw.news_id)
@@ -791,6 +794,17 @@ def delete_report(report_id: int, db: Session = Depends(get_db)):
 
 # ── Routes: run ───────────────────────────────────────────────────────────────
 
+async def _run_pipeline_in_thread(report_id: int, geo: str, use_mock: bool,
+                                   team_lead: str, vertical: str, keywords: str,
+                                   output_language: str):
+    """Runs the blocking pipeline in a thread pool so it doesn't block the event loop."""
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None, _run_pipeline_sync,
+        report_id, geo, use_mock, team_lead, vertical, keywords, output_language,
+    )
+
+
 @app.post("/api/run")
 async def trigger_run(req: RunRequest, background_tasks: BackgroundTasks,
                       db: Session = Depends(get_db)):
@@ -798,7 +812,7 @@ async def trigger_run(req: RunRequest, background_tasks: BackgroundTasks,
     db.add(report); db.commit(); db.refresh(report)
     client_id = f"{req.geo}-{report.id}"
     background_tasks.add_task(
-        _run_pipeline_sync, report.id, req.geo, req.use_mock, req.team_lead,
+        _run_pipeline_in_thread, report.id, req.geo, req.use_mock, req.team_lead,
         req.vertical, req.keywords, req.output_language,
     )
     return {"report_id": report.id, "client_id": client_id}
@@ -809,17 +823,13 @@ async def ws_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket, client_id)
     try:
         data = await websocket.receive_json()
-        db = SessionLocal()
-        try:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None, _run_pipeline_sync,
-                data.get("report_id"), data.get("geo", "RU"),
-                data.get("use_mock", False), data.get("team_lead", "")
-            )
-            await manager.send(client_id, {"done": True, "report_id": data.get("report_id")})
-        finally:
-            db.close()
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None, _run_pipeline_sync,
+            data.get("report_id"), data.get("geo", "RU"),
+            data.get("use_mock", False), data.get("team_lead", "")
+        )
+        await manager.send(client_id, {"done": True, "report_id": data.get("report_id")})
     except WebSocketDisconnect:
         manager.disconnect(client_id)
 
